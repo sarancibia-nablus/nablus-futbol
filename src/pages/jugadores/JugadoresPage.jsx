@@ -1,0 +1,135 @@
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Table from '../../components/ui/Table';
+import Avatar from '../../components/ui/Avatar';
+import Badge from '../../components/ui/Badge';
+import { posiciones } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { usePartidos } from '../../context/PartidosContext';
+import { calculatePlayerStats } from '../../services/statsService';
+
+const posicionBadge = {
+  arquero: 'danger',
+  defensa: 'info',
+  mediocampo: 'success',
+  delantero: 'primary',
+};
+
+const JugadoresPage = () => {
+  const navigate = useNavigate();
+  const { jugadores } = useAuth();
+  const { partidos } = usePartidos();
+
+  // Combine player profiles with dynamically computed real match stats
+  const playersWithStats = useMemo(() => {
+    return jugadores.map((j) => ({
+      ...j,
+      stats: calculatePlayerStats(j.id, partidos),
+    }));
+  }, [jugadores, partidos]);
+
+  const columns = [
+    {
+      key: 'nombre',
+      header: 'Jugador',
+      accessor: 'nombre',
+      sortable: true,
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <Avatar name={row.nombre} src={row.avatar_url} size="sm" />
+          <div>
+            <p className="font-semibold text-gray-900">{row.nombre}</p>
+            <p className="text-xs text-gray-400">{row.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'posicion',
+      header: 'Posición',
+      accessor: 'posicion_preferida',
+      sortable: true,
+      render: (row) => {
+        const pos = posiciones.find((p) => p.value === row.posicion_preferida);
+        return (
+          <Badge variant={posicionBadge[row.posicion_preferida] || 'neutral'}>
+            {pos?.label || row.posicion_preferida}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'partidos',
+      header: 'PJ',
+      accessor: (row) => row.stats?.partidos || 0,
+      sortable: true,
+      render: (row) => (
+        <span className="font-mono font-medium text-gray-700">{row.stats?.partidos || 0}</span>
+      ),
+    },
+    {
+      key: 'goles',
+      header: 'Goles',
+      accessor: (row) => row.stats?.goles || 0,
+      sortable: true,
+      render: (row) => (
+        <span className="font-mono font-bold text-nablus-primary-dark">{row.stats?.goles || 0}</span>
+      ),
+    },
+    {
+      key: 'asistencias',
+      header: 'Asist.',
+      accessor: (row) => row.stats?.asistencias || 0,
+      sortable: true,
+      render: (row) => (
+        <span className="font-mono font-medium text-emerald-700">{row.stats?.asistencias || 0}</span>
+      ),
+    },
+    {
+      key: 'tarjetas',
+      header: 'TA / TR',
+      accessor: (row) => row.stats?.tarjetas_amarillas || 0,
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-3.5 rounded-[2px] bg-amber-400" />
+            <span className="font-mono text-xs text-gray-600">{row.stats?.tarjetas_amarillas || 0}</span>
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2.5 h-3.5 rounded-[2px] bg-rose-500" />
+            <span className="font-mono text-xs text-gray-600">{row.stats?.tarjetas_rojas || 0}</span>
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'mvps',
+      header: 'MVP',
+      accessor: (row) => row.stats?.mvps || 0,
+      sortable: true,
+      render: (row) => (
+        <span className="font-mono font-bold text-amber-600">{row.stats?.mvps || 0}</span>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Plantel de Jugadores</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{jugadores.length} jugadores registrados en Nablus</p>
+        </div>
+      </div>
+
+      <Table
+        columns={columns}
+        data={playersWithStats}
+        searchPlaceholder="Buscar por nombre o correo..."
+        onRowClick={(row) => navigate(`/jugadores/${row.id}`)}
+      />
+    </div>
+  );
+};
+
+export default JugadoresPage;
