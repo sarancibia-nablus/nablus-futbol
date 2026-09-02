@@ -1,0 +1,2 @@
+ALTER TABLE public.users 
+ADD COLUMN IF NOT EXISTS equipo_id TEXT REFERENCES public.equipos(id) ON DELETE SET NULL;
