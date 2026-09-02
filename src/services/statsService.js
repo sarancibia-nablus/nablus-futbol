@@ -195,3 +195,39 @@ export const calculateTeamStats = (jugadores = [], partidos = []) => {
     radarData,
   };
 };
+
+export const calculatePersonalStats = (jugadorId, jugadores = [], partidos = []) => {
+  const allTeamStats = calculateTeamStats(jugadores, partidos);
+  const myStats = allTeamStats.playersWithStats.find(j => j.id === jugadorId)?.stats || calculatePlayerStats(jugadorId, []);
+
+  // Radar Data Normalization based on max of the team
+  const maxGoles = Math.max(...allTeamStats.playersWithStats.map((j) => j.stats.goles), 1);
+  const maxAsistencias = Math.max(...allTeamStats.playersWithStats.map((j) => j.stats.asistencias), 1);
+  const maxPartidosVal = Math.max(...allTeamStats.playersWithStats.map((j) => j.stats.partidos), 1);
+  const maxMvps = Math.max(...allTeamStats.playersWithStats.map((j) => j.stats.mvps), 1);
+
+  const personalRadarData = [
+    { stat: 'Goles', value: Math.round(((myStats.goles || 0) / maxGoles) * 100) },
+    { stat: 'Asistencias', value: Math.round(((myStats.asistencias || 0) / maxAsistencias) * 100) },
+    { stat: 'Partidos', value: Math.round(((myStats.partidos || 0) / maxPartidosVal) * 100) },
+    { stat: 'MVPs', value: Math.round(((myStats.mvps || 0) / maxMvps) * 100) },
+    {
+      stat: 'Disciplina',
+      value: Math.max(
+        10,
+        100 - (myStats.tarjetas_amarillas * 15 + myStats.tarjetas_rojas * 35)
+      ),
+    },
+  ];
+
+  return {
+    stats: myStats,
+    radarData: personalRadarData,
+    maximosEquipo: {
+      goles: maxGoles,
+      asistencias: maxAsistencias,
+      partidos: maxPartidosVal,
+      mvps: maxMvps,
+    }
+  };
+};

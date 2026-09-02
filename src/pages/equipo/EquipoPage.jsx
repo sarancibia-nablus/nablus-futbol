@@ -10,16 +10,59 @@ import {
   CalendarDays,
   Activity,
   Users,
-  Camera
+  Camera,
+  Star
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
-import { Input, Select } from '../../components/ui/Input';
+import { Input } from '../../components/ui/Input';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
 import { dbService } from '../../services/dbService';
 import ImageCropperModal from '../../components/ui/ImageCropperModal';
+import { calculateTeamStats } from '../../services/statsService';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
+
+const RankingList = ({ title, data, statKey, icon: Icon, colorClass }) => (
+  <Card className="p-5 border border-gray-200/90 shadow-sm">
+    <div className="flex items-center gap-2 pb-3 mb-3 border-b border-gray-100">
+      <Icon className={`w-4 h-4 ${colorClass}`} />
+      <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+    </div>
+    <div className="space-y-3">
+      {data.length === 0 ? (
+        <p className="text-xs text-gray-400 text-center py-4">Aún no hay datos suficientes.</p>
+      ) : (
+        data.map((item, index) => (
+          <div key={item.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-6 text-center font-bold text-gray-400 text-xs">
+                #{index + 1}
+              </div>
+              <Avatar name={item.nombre} src={item.avatar_url} size="sm" />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-gray-800">{item.nombre}</span>
+                <span className="text-[10px] text-gray-400 capitalize">{item.posicion_preferida}</span>
+              </div>
+            </div>
+            <span className="text-base font-black font-mono text-gray-900">
+              {item.stats?.[statKey] || 0}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  </Card>
+);
 
 const EquipoPage = () => {
   const { equipo, isAdmin, updateEquipoInfo, jugadores } = useAuth();
@@ -61,64 +104,23 @@ const EquipoPage = () => {
     setImageSrc(null);
   };
 
-  // Cálculo de indicadores interesantes
-  const indicadores = useMemo(() => {
-    const finalizados = partidos.filter(p => p.estado === 'finalizado');
-    const programados = partidos.filter(p => p.estado === 'programado');
-    
-    // Próximo partido
-    const proximoPartido = programados
-      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
-
-    // Goles totales a favor (Sumamos los resultados de los equipos según las victorias o todos los eventos tipo gol)
-    // Usaremos los eventos de gol registrados para el equipo
-    let golesAnotados = 0;
-    const golesPorJugador = {};
-
-    partidos.forEach(p => {
-      if (p.eventos) {
-        p.eventos.forEach(ev => {
-          if (ev.tipo === 'gol') {
-            golesAnotados++;
-            golesPorJugador[ev.jugador_id] = (golesPorJugador[ev.jugador_id] || 0) + 1;
-          }
-        });
-      }
-    });
-
-    // Top goleadores
-    const topGoleadores = Object.entries(golesPorJugador)
-      .map(([jugador_id, goles]) => ({
-        jugador: jugadores.find(j => j.id === jugador_id),
-        goles
-      }))
-      .filter(x => x.jugador)
-      .sort((a, b) => b.goles - a.goles)
-      .slice(0, 3);
-
-    // Victorias (calculando heurísticamente si el equipo A es Nablus, pero asumimos el total de partidos jugados como base)
-    const partidosJugados = finalizados.length;
-
-    return {
-      partidosJugados,
-      golesAnotados,
-      proximoPartido,
-      topGoleadores,
-    };
-  }, [partidos, jugadores]);
+  // Cálculo de estadísticas globales
+  const teamStats = useMemo(() => calculateTeamStats(jugadores, partidos), [jugadores, partidos]);
+  const programados = partidos.filter(p => p.estado === 'programado');
+  const proximoPartido = programados.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
 
   if (!equipo) return null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-fade-in">
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-10">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Shield className="w-7 h-7 text-nablus-primary" />
-            Mi Equipo
+            Mi Equipo y Estadísticas Globales
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Identidad global e indicadores históricos del club
+            Identidad del club y rankings de rendimiento de todo el plantel
           </p>
         </div>
 
@@ -129,7 +131,7 @@ const EquipoPage = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Lado izquierdo: Identidad del equipo */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="p-6 text-center border border-gray-200/90 shadow-sm relative overflow-hidden">
@@ -227,29 +229,64 @@ const EquipoPage = () => {
               </form>
             </Card>
           )}
+
+          {/* Próximo Partido Card */}
+          <Card className="p-5 border border-gray-200/90 shadow-sm flex flex-col">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
+              <CalendarDays className="w-4 h-4 text-nablus-primary" />
+              Próximo Encuentro
+            </h3>
+            
+            {proximoPartido ? (
+              <div className="flex-1 flex flex-col justify-center text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="text-xs font-bold text-nablus-primary uppercase tracking-widest mb-2">
+                  {new Date(proximoPartido.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </div>
+                <div className="text-xl font-black text-gray-900 mb-1">
+                  {proximoPartido.ubicacion || 'Por definir'}
+                </div>
+                <div className="text-sm font-semibold text-gray-500">
+                  Formato: {proximoPartido.formato}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-center items-center p-6 text-center">
+                <CalendarDays className="w-8 h-8 text-gray-300 mb-2" />
+                <p className="text-sm font-semibold text-gray-500">Sin partidos programados</p>
+              </div>
+            )}
+          </Card>
         </div>
 
-        {/* Lado derecho: Tablero de Indicadores */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Lado derecho: Tablero de Estadísticas y Rankings */}
+        <div className="lg:col-span-3 space-y-6">
           {/* Tarjetas de Métricas KPI */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center shadow-sm">
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-2">
                 <Activity className="w-5 h-5 text-blue-500" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Jugados</span>
-              <span className="text-3xl font-black text-gray-900 mt-1">{indicadores.partidosJugados}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Partidos</span>
+              <span className="text-3xl font-black text-gray-900 mt-1">{teamStats.totals.partidos}</span>
             </Card>
 
-            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center">
+            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center shadow-sm">
               <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-2">
                 <Target className="w-5 h-5 text-emerald-500" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Goles Totales</span>
-              <span className="text-3xl font-black text-gray-900 mt-1">{indicadores.golesAnotados}</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Goles</span>
+              <span className="text-3xl font-black text-gray-900 mt-1">{teamStats.totals.goles}</span>
+            </Card>
+            
+            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mb-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Asistencias</span>
+              <span className="text-3xl font-black text-gray-900 mt-1">{teamStats.totals.asistencias}</span>
             </Card>
 
-            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center col-span-2 sm:col-span-1">
+            <Card className="p-4 border border-gray-100 flex flex-col items-center text-center justify-center shadow-sm">
               <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mb-2">
                 <Users className="w-5 h-5 text-purple-500" />
               </div>
@@ -257,62 +294,39 @@ const EquipoPage = () => {
               <span className="text-3xl font-black text-gray-900 mt-1">{jugadores.length}</span>
             </Card>
           </div>
+          
+          {/* Gráfico Aporte por Posición */}
+          <Card className="p-6">
+            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
+              Aporte Ofensivo por Posición (Goles vs Asistencias)
+            </h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={teamStats.golesPorPosicion} barSize={22}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
+                  <XAxis dataKey="posicion" tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#6B7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#FFFFFF',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar dataKey="goles" fill="#A493DC" radius={[4, 4, 0, 0]} name="Goles" />
+                  <Bar dataKey="asistencias" fill="#10B981" radius={[4, 4, 0, 0]} name="Asistencias" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Ranking Goleadores Histórico */}
-            <Card className="p-5 border border-gray-200/90 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-                <Trophy className="w-4 h-4 text-amber-500" />
-                Máximos Goleadores (Histórico)
-              </h3>
-              <div className="space-y-3">
-                {indicadores.topGoleadores.length === 0 ? (
-                  <p className="text-xs text-gray-400 text-center py-4">No hay goles registrados aún.</p>
-                ) : (
-                  indicadores.topGoleadores.map((item, index) => (
-                    <div key={item.jugador.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 text-center font-bold text-gray-400 text-xs">
-                          #{index + 1}
-                        </div>
-                        <Avatar name={item.jugador.nombre} src={item.jugador.avatar_url} size="sm" />
-                        <span className="text-sm font-semibold text-gray-800">{item.jugador.nombre}</span>
-                      </div>
-                      <span className="text-sm font-black text-nablus-primary bg-nablus-primary/10 px-2.5 py-1 rounded-lg">
-                        {item.goles} <span className="text-[10px] uppercase font-bold">⚽</span>
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
-
-            {/* Próximo Partido */}
-            <Card className="p-5 border border-gray-200/90 shadow-sm flex flex-col">
-              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
-                <CalendarDays className="w-4 h-4 text-nablus-primary" />
-                Próximo Encuentro
-              </h3>
-              
-              {indicadores.proximoPartido ? (
-                <div className="flex-1 flex flex-col justify-center text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="text-xs font-bold text-nablus-primary uppercase tracking-widest mb-2">
-                    {new Date(indicadores.proximoPartido.fecha).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </div>
-                  <div className="text-xl font-black text-gray-900 mb-1">
-                    {indicadores.proximoPartido.ubicacion || 'Por definir'}
-                  </div>
-                  <div className="text-sm font-semibold text-gray-500">
-                    Formato: {indicadores.proximoPartido.formato}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col justify-center items-center p-6 text-center">
-                  <CalendarDays className="w-8 h-8 text-gray-300 mb-2" />
-                  <p className="text-sm font-semibold text-gray-500">Sin partidos programados</p>
-                </div>
-              )}
-            </Card>
+          {/* Grid de Rankings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            <RankingList title="Goleadores Históricos" data={teamStats.topGoleadores} statKey="goles" icon={Target} colorClass="text-nablus-primary" />
+            <RankingList title="Top Asistidores" data={teamStats.topAsistidores} statKey="asistencias" icon={Trophy} colorClass="text-emerald-600" />
+            <RankingList title="Más Presencias (Partidos)" data={teamStats.masPartidos} statKey="partidos" icon={Users} colorClass="text-blue-600" />
+            <RankingList title="Máximos MVPs" data={teamStats.topMVPs} statKey="mvps" icon={Star} colorClass="text-amber-500" />
           </div>
 
         </div>

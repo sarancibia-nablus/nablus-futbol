@@ -8,6 +8,8 @@ import { Input, Select } from '../../components/ui/Input';
 import { formatosPartido } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
+import { dbService } from '../../services/dbService';
+import { useEffect } from 'react';
 
 const CrearPartidoPage = () => {
   const navigate = useNavigate();
@@ -41,9 +43,55 @@ const CrearPartidoPage = () => {
     invitados: jugadores.map((j) => j.id), // por defecto todos seleccionados
   });
 
-  const [selectAll, setSelectAll] = useState(true);
+  const [selectAll, setSelectAll] = useState(false);
+  const [allDisp, setAllDisp] = useState([]);
+  const [jugadoresDisponiblesIds, setJugadoresDisponiblesIds] = useState([]);
+  const [manualSelection, setManualSelection] = useState(false);
+
+  // Fetch availabilities on mount
+  useEffect(() => {
+    const fetchDisp = async () => {
+      const data = await dbService.getAllDisponibilidades();
+      setAllDisp(data || []);
+    };
+    fetchDisp();
+  }, []);
+
+  // Recalculate availabilities when date or time changes
+  useEffect(() => {
+    if (!form.fecha || !form.hora || allDisp.length === 0) return;
+
+    try {
+      const dateObj = new Date(form.fecha + 'T12:00:00'); // Use mid-day to avoid TZ shifts
+      const diaSemana = dateObj.getDay(); // 0 = Domingo, 1 = Lunes
+      
+      const horaSeleccionada = parseInt(form.hora.split(':')[0]);
+
+      const disponibles = allDisp.filter(disp => {
+        if (disp.dia_semana !== diaSemana) return false;
+        const hInicio = parseInt(disp.hora_inicio?.split(':')[0] || 0);
+        const hFin = parseInt(disp.hora_fin?.split(':')[0] || 0);
+        // Available if selected hour is within their slot (inclusive start, exclusive end)
+        return horaSeleccionada >= hInicio && horaSeleccionada < hFin;
+      });
+
+      const idsDisponibles = [...new Set(disponibles.map(d => d.jugador_id))];
+      setJugadoresDisponiblesIds(idsDisponibles);
+
+      // Auto-select available players if we haven't manually started selecting
+      if (!manualSelection) {
+        setForm(prev => ({
+          ...prev,
+          invitados: idsDisponibles
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [form.fecha, form.hora, allDisp, manualSelection]);
 
   const toggleJugador = (id) => {
+    setManualSelection(true);
     setForm((prev) => ({
       ...prev,
       invitados: prev.invitados.includes(id)
@@ -53,6 +101,7 @@ const CrearPartidoPage = () => {
   };
 
   const handleSelectAll = () => {
+    setManualSelection(true);
     if (selectAll) {
       setForm((prev) => ({ ...prev, invitados: [] }));
     } else {
@@ -174,6 +223,8 @@ const CrearPartidoPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-96 overflow-y-auto pr-1">
             {jugadores.map((jugador) => {
               const selected = form.invitados.includes(jugador.id);
+              const isAvailable = jugadoresDisponiblesIds.includes(jugador.id);
+
               return (
                 <button
                   key={jugador.id}
@@ -199,9 +250,16 @@ const CrearPartidoPage = () => {
                     )}
                   </div>
                   <Avatar name={jugador.nombre} src={jugador.avatar_url} size="xs" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-gray-900 truncate">{jugador.nombre}</p>
-                    <p className="text-[11px] text-gray-400 capitalize">{jugador.posicion_preferida}</p>
+                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 truncate">{jugador.nombre}</p>
+                      <p className="text-[11px] text-gray-400 capitalize">{jugador.posicion_preferida}</p>
+                    </div>
+                    {!isAvailable && (
+                      <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100 flex-shrink-0" title="No ha marcado disponibilidad en este horario">
+                        No Disponible
+                      </span>
+                    )}
                   </div>
                 </button>
               );

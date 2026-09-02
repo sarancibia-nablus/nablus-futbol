@@ -19,6 +19,7 @@ import {
   Trophy,
   AlertTriangle,
   Download,
+  UserPlus,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -69,6 +70,8 @@ const DetallePartidoPage = () => {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isEquiposModalOpen, setIsEquiposModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [selectedInvitados, setSelectedInvitados] = useState([]);
 
   // Form State para edición de partido
   const [editForm, setEditForm] = useState({
@@ -190,6 +193,34 @@ const DetallePartidoPage = () => {
     setNuevoEvento({ jugador_id: '', tipo: 'gol', minuto: 1 });
   };
 
+  const handleInviteJugadores = (e) => {
+    e.preventDefault();
+    if (selectedInvitados.length === 0) return;
+
+    const nuevosJugadores = selectedInvitados.map((jugadorId) => ({
+      jugador_id: jugadorId,
+      equipo_partido: null,
+      estado_invitacion: 'pendiente',
+    }));
+
+    updatePartido(partido.id, {
+      jugadores: [...(partido.jugadores || []), ...nuevosJugadores]
+    });
+
+    setIsInviteModalOpen(false);
+    setSelectedInvitados([]);
+  };
+
+  const toggleInvitado = (jugadorId) => {
+    setSelectedInvitados((prev) =>
+      prev.includes(jugadorId) ? prev.filter((id) => id !== jugadorId) : [...prev, jugadorId]
+    );
+  };
+
+  const uninvitedJugadores = allJugadores.filter(
+    (j) => !(partido.jugadores || []).some((pj) => pj.jugador_id === j.id)
+  );
+
   // Check current user status
   const currentUserRecord = partido.jugadores?.find((j) => j.jugador_id === user?.id);
 
@@ -203,6 +234,7 @@ const DetallePartidoPage = () => {
 
         <div className="flex items-center gap-2">
           {isAdmin && (
+            <>
             <Button
               variant="secondary"
               icon={Edit}
@@ -220,6 +252,17 @@ const DetallePartidoPage = () => {
             >
               Editar Partido y Resultado
             </Button>
+            <Button
+              variant="primary"
+              icon={UserPlus}
+              onClick={() => {
+                setSelectedInvitados([]);
+                setIsInviteModalOpen(true);
+              }}
+            >
+              Invitar Jugadores
+            </Button>
+            </>
           )}
         </div>
       </div>
@@ -265,7 +308,7 @@ const DetallePartidoPage = () => {
 
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <a
-                href={generateGoogleCalendarUrl(partido)}
+                href={generateGoogleCalendarUrl(partido, (partido.jugadores || []).map(j => getJugador(j.jugador_id)?.email).filter(Boolean))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors border border-gray-200"
@@ -808,6 +851,58 @@ const DetallePartidoPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Modal Invitar Jugadores */}
+      {isInviteModalOpen && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full p-6 animate-scale-in flex flex-col max-h-[90vh]">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Invitar Jugadores</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Selecciona a los jugadores que deseas agregar a la convocatoria de este partido.
+            </p>
+            
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4 border border-gray-100 rounded-xl p-2 bg-gray-50/50">
+              {uninvitedJugadores.length === 0 ? (
+                <p className="text-sm text-center text-gray-500 py-4">
+                  Todos los jugadores del plantel ya están invitados.
+                </p>
+              ) : (
+                uninvitedJugadores.map((jugador) => (
+                  <label
+                    key={jugador.id}
+                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      selectedInvitados.includes(jugador.id)
+                        ? 'border-nablus-primary bg-nablus-primary/5 shadow-sm'
+                        : 'border-gray-200 bg-white hover:border-nablus-primary/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedInvitados.includes(jugador.id)}
+                      onChange={() => toggleInvitado(jugador.id)}
+                      className="w-4 h-4 text-nablus-primary rounded focus:ring-nablus-primary"
+                    />
+                    <Avatar name={jugador.nombre} src={jugador.avatar_url} size="sm" />
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">{jugador.nombre}</div>
+                      <div className="text-xs text-gray-500 capitalize">{jugador.posicion_preferida}</div>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100 mt-auto">
+              <Button variant="secondary" onClick={() => setIsInviteModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleInviteJugadores} disabled={selectedInvitados.length === 0}>
+                Enviar Invitaciones
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

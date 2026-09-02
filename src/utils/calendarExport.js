@@ -1,4 +1,4 @@
-export const generateGoogleCalendarUrl = (partido) => {
+export const generateGoogleCalendarUrl = (partido, invitadosEmails = []) => {
   const title = encodeURIComponent(`Partido Nablus FC - ${partido.formato || 'Fútbol'}`);
   const location = encodeURIComponent(partido.ubicacion || '');
   const details = encodeURIComponent('Convocatoria oficial de Nablus FC. ¡No faltes!');
@@ -9,7 +9,13 @@ export const generateGoogleCalendarUrl = (partido) => {
   // Google Calendar format requires YYYYMMDDTHHmmssZ
   const formatDateString = (date) => date.toISOString().replace(/-|:|\.\d\d\d/g, '');
 
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${formatDateString(startDate)}/${formatDateString(endDate)}&details=${details}&location=${location}`;
+  let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${formatDateString(startDate)}/${formatDateString(endDate)}&details=${details}&location=${location}`;
+
+  if (invitadosEmails.length > 0) {
+    url += `&add=${invitadosEmails.join(',')}`;
+  }
+
+  return url;
 };
 
 export const downloadIcsFile = (partido) => {

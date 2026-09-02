@@ -21,7 +21,7 @@ const menuItems = [
   { path: '/equipo', label: 'Mi Equipo', icon: Shield },
   { path: '/jugadores', label: 'Jugadores', icon: Users },
   { path: '/disponibilidad', label: 'Disponibilidad', icon: Clock },
-  { path: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },
+  { path: '/estadisticas', label: 'Mis estadísticas', icon: BarChart3 },
 ];
 
 const bottomItems = [
@@ -40,8 +40,8 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 
-                  flex flex-col transition-all duration-300 z-40 shadow-subtle
+      className={`hidden md:flex fixed left-0 top-0 h-screen bg-white border-r border-gray-200 
+                  flex-col transition-all duration-300 z-40 shadow-subtle
                   ${collapsed ? 'w-[72px]' : 'w-[240px]'}`}
     >
       {/* Logo */}

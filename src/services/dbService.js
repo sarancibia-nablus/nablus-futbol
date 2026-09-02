@@ -249,14 +249,16 @@ export const dbService = {
         }
         if (jugadores) {
           for (const j of jugadores) {
+            const payload = {
+              partido_id: id,
+              jugador_id: j.jugador_id,
+            };
+            if (j.equipo_partido !== undefined) payload.equipo_partido = j.equipo_partido;
+            if (j.estado_invitacion !== undefined) payload.estado_invitacion = j.estado_invitacion;
+
             await supabase
               .from('partido_jugadores')
-              .upsert({
-                partido_id: id,
-                jugador_id: j.jugador_id,
-                equipo_partido: j.equipo_partido,
-                estado_invitacion: j.estado_invitacion,
-              }, { onConflict: 'partido_id,jugador_id' });
+              .upsert(payload, { onConflict: 'partido_id,jugador_id' });
           }
         }
       } catch (err) {
@@ -265,7 +267,23 @@ export const dbService = {
     }
 
     const partidos = await this.getPartidos();
-    const updated = partidos.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    const updated = partidos.map((p) => {
+      if (p.id === id) {
+        const pUpdated = { ...p, ...updates };
+        // Merging jugadores properly for local storage
+        if (updates.jugadores && p.jugadores) {
+          pUpdated.jugadores = p.jugadores.map(existingJugador => {
+            const match = updates.jugadores.find(u => u.jugador_id === existingJugador.jugador_id);
+            return match ? { ...existingJugador, ...match } : existingJugador;
+          });
+          // Add any new players that weren't in the existing array
+          const newPlayers = updates.jugadores.filter(u => !p.jugadores.some(e => e.jugador_id === u.jugador_id));
+          pUpdated.jugadores = [...pUpdated.jugadores, ...newPlayers];
+        }
+        return pUpdated;
+      }
+      return p;
+    });
     localStorage.setItem(LOCAL_STORAGE_KEY_PARTIDOS, JSON.stringify(updated));
     return updates;
   },
@@ -303,6 +321,19 @@ export const dbService = {
   },
 
   // 4. Disponibilidad
+  async getAllDisponibilidades() {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.from('disponibilidad').select('*');
+        if (!error && Array.isArray(data)) return data;
+      } catch (err) {
+        console.warn('Error querying all disponibilidad in Supabase:', err);
+      }
+    }
+    const local = localStorage.getItem(LOCAL_STORAGE_KEY_DISP);
+    return local ? JSON.parse(local) : [];
+  },
+
   async getDisponibilidad(jugadorId) {
     if (isSupabaseConfigured && jugadorId) {
       try {
