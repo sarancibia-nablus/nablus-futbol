@@ -287,7 +287,7 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (email) => {
     if (isSupabaseConfigured) {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: window.location.origin + '/perfil',
+        redirectTo: window.location.origin + '/actualizar-password',
       });
       if (error) return { success: false, error: error.message };
       return { success: true };

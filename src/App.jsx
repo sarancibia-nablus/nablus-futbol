@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { PartidosProvider } from './context/PartidosContext';
 import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
+import ActualizarPasswordPage from './pages/auth/ActualizarPasswordPage';
 import CalendarioPage from './pages/calendario/CalendarioPage';
 import JugadoresPage from './pages/jugadores/JugadoresPage';
 import JugadorPerfilPage from './pages/jugadores/JugadorPerfilPage';
@@ -52,6 +53,7 @@ const AppRoutes = () => {
         path="/login"
         element={isAuthenticated ? <Navigate to="/calendario" replace /> : <LoginPage />}
       />
+      <Route path="/actualizar-password" element={<ActualizarPasswordPage />} />
       <Route
         path="/"
         element={
