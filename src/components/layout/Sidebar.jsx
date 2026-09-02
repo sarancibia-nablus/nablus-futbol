@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from 'lucide-react';
 import { useState } from 'react';
 import NablusLogo from '../shared/NablusLogo';
@@ -17,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 const menuItems = [
   { path: '/calendario', label: 'Calendario', icon: CalendarDays },
   { path: '/partidos', label: 'Partidos', icon: Trophy },
+  { path: '/equipo', label: 'Mi Equipo', icon: Shield },
   { path: '/jugadores', label: 'Jugadores', icon: Users },
   { path: '/disponibilidad', label: 'Disponibilidad', icon: Clock },
   { path: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },

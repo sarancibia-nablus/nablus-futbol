@@ -327,6 +327,15 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
+  // Update Equipo
+  const updateEquipoInfo = async (updatedData) => {
+    if (!equipo) return { success: false };
+    const updatedEquipo = { ...equipo, ...updatedData };
+    setEquipo(updatedEquipo);
+    await dbService.updateEquipo(equipo.id, updatedData);
+    return { success: true };
+  };
+
   // Set Role (Capitán can promote/demote members)
   const setRole = async (userId, es_admin) => {
     await dbService.updateUser(userId, { es_admin });
@@ -336,6 +345,13 @@ export const AuthProvider = ({ children }) => {
     if (user?.id === userId) {
       setUser((prev) => ({ ...prev, es_admin }));
     }
+    return { success: true };
+  };
+
+  // Remove Jugador (Admin)
+  const removeJugador = async (userId) => {
+    await dbService.deleteJugador(userId);
+    setJugadores((prev) => prev.filter((j) => j.id !== userId));
     return { success: true };
   };
 
@@ -356,7 +372,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         switchUser,
         updateUserProfile,
+        updateEquipoInfo,
         setRole,
+        removeJugador,
         seedDatabase,
       }}
     >

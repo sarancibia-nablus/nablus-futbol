@@ -9,9 +9,9 @@ import { posiciones } from '../../data/mockData';
 
 const LoginPage = () => {
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
-  const [email, setEmail] = useState('sarancibia@nablus.cl');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [nombre, setNombre] = useState('Sebastián Arancibia');
+  const [nombre, setNombre] = useState('');
   const [posicion, setPosicion] = useState('mediocampo');
   const [fechaNacimiento, setFechaNacimiento] = useState('1992-04-15');
   const [showPassword, setShowPassword] = useState(false);
@@ -245,6 +245,14 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Overlay de Carga Leve */}
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center animate-fade-in">
+          <div className="w-10 h-10 border-4 border-nablus-primary/20 border-t-nablus-primary rounded-full animate-spin"></div>
+          <span className="mt-3 text-sm font-semibold text-nablus-primary-dark">Conectando...</span>
+        </div>
+      )}
     </div>
   );
 };

@@ -24,6 +24,49 @@ export const dbService = {
     return local ? JSON.parse(local) : { id: 'eq_nablus', nombre: 'Nablus FC', email_contacto: 'contacto@nablus.cl' };
   },
 
+  async updateEquipo(id, updates) {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('equipos')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Error updating equipo in Supabase:', err);
+      }
+    }
+    const current = await this.getEquipo();
+    const updated = { ...current, ...updates };
+    localStorage.setItem(LOCAL_STORAGE_KEY_EQUIPO, JSON.stringify(updated));
+    return updated;
+  },
+
+  async uploadLogoEquipo(equipoId, file) {
+    if (!isSupabaseConfigured) return null;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${equipoId}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('logos_equipos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('logos_equipos')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      return null;
+    }
+  },
+
   // 2. Jugadores / Users
   async getJugadores() {
     if (isSupabaseConfigured) {
@@ -57,10 +100,25 @@ export const dbService = {
         console.warn('Error updating user in Supabase:', err);
       }
     }
-    const jugadores = await this.getJugadores();
-    const updated = jugadores.map((j) => (j.id === id ? { ...j, ...updates } : j));
+    const current = await this.getJugadores();
+    const updated = current.map((j) => (j.id === id ? { ...j, ...updates } : j));
     localStorage.setItem(LOCAL_STORAGE_KEY_JUGADORES, JSON.stringify(updated));
-    return { id, ...updates };
+    return updated.find((j) => j.id === id);
+  },
+
+  async deleteJugador(id) {
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('users').delete().eq('id', id);
+        if (!error) return true;
+      } catch (err) {
+        console.warn('Error deleting user in Supabase:', err);
+      }
+    }
+    const current = await this.getJugadores();
+    const updated = current.filter((j) => j.id !== id);
+    localStorage.setItem(LOCAL_STORAGE_KEY_JUGADORES, JSON.stringify(updated));
+    return true;
   },
 
   async uploadAvatar(file, userId) {

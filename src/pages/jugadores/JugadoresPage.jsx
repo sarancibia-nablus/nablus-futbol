@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Shield, ShieldCheck, Trash2 } from 'lucide-react';
 import Table from '../../components/ui/Table';
 import Avatar from '../../components/ui/Avatar';
 import Badge from '../../components/ui/Badge';
@@ -17,7 +18,7 @@ const posicionBadge = {
 
 const JugadoresPage = () => {
   const navigate = useNavigate();
-  const { jugadores } = useAuth();
+  const { jugadores, isAdmin, setRole, removeJugador } = useAuth();
   const { partidos } = usePartidos();
 
   // Combine player profiles with dynamically computed real match stats
@@ -28,7 +29,7 @@ const JugadoresPage = () => {
     }));
   }, [jugadores, partidos]);
 
-  const columns = [
+  const baseColumns = [
     {
       key: 'nombre',
       header: 'Jugador',
@@ -112,6 +113,44 @@ const JugadoresPage = () => {
       ),
     },
   ];
+
+  const columns = useMemo(() => {
+    const cols = [...baseColumns];
+    if (isAdmin) {
+      cols.push({
+        key: 'admin',
+        header: 'Gestión',
+        accessor: 'id',
+        render: (row) => (
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setRole(row.id, !row.es_admin)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                row.es_admin 
+                  ? 'bg-nablus-primary/10 text-nablus-primary hover:bg-nablus-primary/20'
+                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+              }`}
+              title={row.es_admin ? "Quitar Capitán" : "Hacer Capitán"}
+            >
+              {row.es_admin ? <ShieldCheck className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={async () => {
+                if (window.confirm(`¿Estás seguro que deseas eliminar a ${row.nombre}? Esto borrará su historial de partidos.`)) {
+                  await removeJugador(row.id);
+                }
+              }}
+              className="p-1.5 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors"
+              title="Eliminar Jugador"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ),
+      });
+    }
+    return cols;
+  }, [isAdmin, setRole, removeJugador]);
 
   return (
     <div className="space-y-6 animate-fade-in">

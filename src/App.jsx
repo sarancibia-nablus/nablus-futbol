@@ -13,6 +13,7 @@ import DetallePartidoPage from './pages/partidos/DetallePartidoPage';
 import DisponibilidadPage from './pages/disponibilidad/DisponibilidadPage';
 import EstadisticasPage from './pages/estadisticas/EstadisticasPage';
 import PerfilPage from './pages/perfil/PerfilPage';
+import EquipoPage from './pages/equipo/EquipoPage';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -68,6 +69,7 @@ const AppRoutes = () => {
         <Route path="partidos/:id" element={<DetallePartidoPage />} />
         <Route path="disponibilidad" element={<DisponibilidadPage />} />
         <Route path="estadisticas" element={<EstadisticasPage />} />
+        <Route path="equipo" element={<EquipoPage />} />
         <Route path="perfil" element={<PerfilPage />} />
       </Route>
       <Route path="*" element={<Navigate to={isAuthenticated ? "/calendario" : "/login"} replace />} />
