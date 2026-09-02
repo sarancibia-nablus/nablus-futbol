@@ -583,7 +583,7 @@ const DetallePartidoPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {sinEquipo.map((j) => (
                 <div
-                  key={j.jugador_id}
+                  key={j.id || j.jugador_id}
                   className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 border border-gray-100"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -591,9 +591,12 @@ const DetallePartidoPage = () => {
                     <span className="text-xs font-medium text-gray-800 truncate">
                       {j.jugador?.nombre}
                     </span>
+                    {j.isInvitado && (
+                      <span className="text-[10px] text-purple-500 font-semibold">Extra</span>
+                    )}
                   </div>
-                  <Badge variant={invitacionBadge[j.estado_invitacion]?.variant || 'neutral'}>
-                    {invitacionBadge[j.estado_invitacion]?.label || j.estado_invitacion}
+                  <Badge variant={j.isInvitado ? 'success' : (invitacionBadge[j.estado_invitacion]?.variant || 'neutral')}>
+                    {j.isInvitado ? 'Confirmado' : (invitacionBadge[j.estado_invitacion]?.label || j.estado_invitacion)}
                   </Badge>
                 </div>
               ))}

@@ -33,18 +33,27 @@ const JugadoresPage = () => {
   const activeData = activeTab === 'plantel' ? plantel : invitados;
 
   // Combine player profiles with dynamically computed real match stats
-  const playersWithStats = useMemo(() => {
-    if (activeTab === 'invitados') return invitados;
-    return activeData.map((j) => {
+  const plantelWithStats = useMemo(() =>
+    plantel.map((j) => {
       const stats = calculatePlayerStats(j.id, partidos);
       const media = calculatePlayerOverall(stats, j.posicion_preferida);
-      return {
-        ...j,
-        stats,
-        media,
-      };
-    });
-  }, [activeTab, activeData, invitados, partidos]);
+      return { ...j, stats, media };
+    }),
+  [plantel, partidos]);
+
+  // Average OVR of the official squad — used as baseline for invitados
+  const avgPlantelOVR = useMemo(() => {
+    if (plantelWithStats.length === 0) return 70;
+    const total = plantelWithStats.reduce((sum, j) => sum + (j.media || 70), 0);
+    return Math.round(total / plantelWithStats.length);
+  }, [plantelWithStats]);
+
+  const playersWithStats = useMemo(() => {
+    if (activeTab === 'invitados') {
+      return invitados.map((inv) => ({ ...inv, media: avgPlantelOVR }));
+    }
+    return plantelWithStats;
+  }, [activeTab, plantelWithStats, invitados, avgPlantelOVR]);
 
   const baseColumns = [
     {
@@ -170,6 +179,18 @@ const JugadoresPage = () => {
             <Badge variant={posicionBadge[row.posicion_preferida] || 'default'} className="capitalize">
               {row.posicion_preferida}
             </Badge>
+          ),
+        },
+        {
+          key: 'ovr',
+          header: 'OVR',
+          accessor: 'media',
+          sortable: true,
+          render: (row) => (
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-sm text-nablus-primary">{row.media ?? avgPlantelOVR}</span>
+              <span className="text-[10px] text-gray-400">avg</span>
+            </div>
           ),
         },
       ];
