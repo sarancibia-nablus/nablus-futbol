@@ -79,12 +79,12 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center bg-gray-50">
+        <div className="p-6 overflow-y-auto overflow-x-auto flex-1 flex flex-col items-center bg-gray-50">
           
-          {/* El contenedor que será capturado (1080x1920 ratio appx, usaremos 400x711 px ratio) */}
+          {/* El contenedor que será capturado. Forzamos dimensiones estrictas para evitar que Flexbox lo corte */}
           <div 
             ref={graphicRef}
-            className="w-[360px] h-[640px] relative overflow-hidden rounded-xl shadow-2xl bg-[#0B0F19] flex flex-col"
+            className="w-[360px] min-w-[360px] h-[640px] min-h-[640px] shrink-0 relative overflow-hidden rounded-xl shadow-2xl bg-[#0B0F19] flex flex-col"
           >
             {/* Fondo complejo: Degradados oscuros y luz corporativa */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-[#0B0F19] to-purple-950/80" />
@@ -143,31 +143,31 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
                   </div>
                 </div>
 
-                <div className="flex w-full gap-3 h-full">
+                <div className="flex w-full gap-3 h-full min-w-0">
                   {/* Equipo A */}
-                  <div className="flex-1 flex flex-col items-center">
-                    <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-3">Equipo A</h3>
+                  <div className="flex-1 flex flex-col items-center min-w-0">
+                    <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-3 drop-shadow-md">Equipo A</h3>
                     <div className="w-full flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 shadow-inner">
                       {equipoA.length > 0 ? equipoA.map((j) => (
-                        <div key={j.id} className="text-[11px] font-bold tracking-wide text-gray-200 uppercase bg-white/5 py-1 px-2 rounded-md truncate border border-white/5">
+                        <div key={j.id} className="w-full text-[11px] font-bold tracking-wide text-gray-200 uppercase bg-white/5 py-1 px-2 rounded-md truncate border border-white/5 text-center shadow-sm">
                           {j.jugador?.nombre || 'Jugador'}
                         </div>
                       )) : (
-                        <div className="text-[10px] text-gray-500 italic mt-4">Sin confirmar</div>
+                        <div className="text-[10px] text-gray-500 italic mt-4 text-center">Sin confirmar</div>
                       )}
                     </div>
                   </div>
 
                   {/* Equipo B */}
-                  <div className="flex-1 flex flex-col items-center">
-                    <h3 className="text-xl font-black italic uppercase tracking-wider text-purple-400 mb-3">Equipo B</h3>
+                  <div className="flex-1 flex flex-col items-center min-w-0">
+                    <h3 className="text-xl font-black italic uppercase tracking-wider text-purple-400 mb-3 drop-shadow-md">Equipo B</h3>
                     <div className="w-full flex-1 bg-purple-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-3 flex flex-col gap-1.5 shadow-inner">
                       {equipoB.length > 0 ? equipoB.map((j) => (
-                        <div key={j.id} className="text-[11px] font-bold tracking-wide text-purple-100 uppercase bg-purple-500/10 py-1 px-2 rounded-md truncate border border-purple-500/20">
+                        <div key={j.id} className="w-full text-[11px] font-bold tracking-wide text-purple-100 uppercase bg-purple-500/10 py-1 px-2 rounded-md truncate border border-purple-500/20 text-center shadow-sm">
                           {j.jugador?.nombre || 'Jugador'}
                         </div>
                       )) : (
-                        <div className="text-[10px] text-gray-500 italic mt-4">Sin confirmar</div>
+                        <div className="text-[10px] text-gray-500 italic mt-4 text-center">Sin confirmar</div>
                       )}
                     </div>
                   </div>
