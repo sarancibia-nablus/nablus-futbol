@@ -31,6 +31,9 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
     return name;
   };
 
+  const GRAPHIC_WIDTH = 480;
+  const GRAPHIC_HEIGHT = 600;
+
   const handleDownload = async () => {
     if (!graphicRef.current) return;
     try {
@@ -39,6 +42,8 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
         quality: 1.0, 
         pixelRatio: 2,
         cacheBust: true,
+        width: GRAPHIC_WIDTH,
+        height: GRAPHIC_HEIGHT,
       });
       const link = document.createElement('a');
       link.download = `partido-${partido.lugar.replace(/\s+/g, '-').toLowerCase()}-${new Date(partido.fecha).getTime()}.png`;
@@ -55,7 +60,12 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
     if (!graphicRef.current) return;
     try {
       setLoading(true);
-      const dataUrl = await toPng(graphicRef.current, { quality: 1.0, pixelRatio: 2 });
+      const dataUrl = await toPng(graphicRef.current, {
+        quality: 1.0,
+        pixelRatio: 2,
+        width: GRAPHIC_WIDTH,
+        height: GRAPHIC_HEIGHT,
+      });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'partido.png', { type: blob.type });
 
@@ -77,7 +87,7 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl w-full max-w-[520px] shadow-2xl flex flex-col max-h-[95vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h3 className="text-lg font-bold text-gray-900">Gráfica del Partido</h3>
@@ -148,8 +158,8 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
               {/* Verses Layout */}
               <div className="flex-1 flex flex-col relative w-full px-2 mt-2">
                 
-                {/* VS Badge Floating */}
-                <div className="absolute top-[48%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                {/* VS Badge Floating — posición fija en px para coherencia preview/descarga */}
+                <div className="absolute left-1/2 z-20" style={{ top: '50%', transform: 'translate(-50%, -50%)' }}>
                   <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.5)] border-4 border-[#0B0F19]">
                     <span className="text-base font-black italic text-white leading-none">VS</span>
                   </div>
