@@ -167,6 +167,9 @@ export const dbService = {
         if (!error && Array.isArray(data)) {
           return data.map((p) => ({
             ...p,
+            fecha: `${p.fecha}T${p.hora}`,
+            ubicacion: p.lugar,
+            ubicacion_url: p.mapa_url,
             jugadores: p.partido_jugadores || [],
             eventos: p.partido_eventos || [],
           }));
@@ -182,10 +185,20 @@ export const dbService = {
   async createPartido(partidoData) {
     if (isSupabaseConfigured) {
       try {
-        const { jugadores, eventos, ...partidoFields } = partidoData;
+        const { jugadores, eventos, equipo_id, fecha, ubicacion, ubicacion_url, ...partidoFields } = partidoData;
+        
+        // Transformar al esquema real de Supabase
+        const dbPayload = {
+          ...partidoFields,
+          fecha: fecha ? fecha.split('T')[0] : new Date().toISOString().split('T')[0],
+          hora: fecha && fecha.includes('T') ? fecha.split('T')[1] : '19:00:00',
+          lugar: ubicacion || 'Cancha',
+          mapa_url: ubicacion_url || null,
+        };
+
         const { data: partido, error } = await supabase
           .from('partidos')
-          .insert([partidoFields])
+          .insert([dbPayload])
           .select()
           .single();
 
@@ -220,9 +233,19 @@ export const dbService = {
   async updatePartido(id, updates) {
     if (isSupabaseConfigured) {
       try {
-        const { jugadores, eventos, ...partidoFields } = updates;
-        if (Object.keys(partidoFields).length > 0) {
-          await supabase.from('partidos').update(partidoFields).eq('id', id);
+        const { jugadores, eventos, equipo_id, fecha, ubicacion, ubicacion_url, ...partidoFields } = updates;
+        
+        // Transformar solo los campos que vengan en updates
+        const dbPayload = { ...partidoFields };
+        if (fecha) {
+          dbPayload.fecha = fecha.split('T')[0];
+          if (fecha.includes('T')) dbPayload.hora = fecha.split('T')[1];
+        }
+        if (ubicacion !== undefined) dbPayload.lugar = ubicacion;
+        if (ubicacion_url !== undefined) dbPayload.mapa_url = ubicacion_url;
+
+        if (Object.keys(dbPayload).length > 0) {
+          await supabase.from('partidos').update(dbPayload).eq('id', id);
         }
         if (jugadores) {
           for (const j of jugadores) {
