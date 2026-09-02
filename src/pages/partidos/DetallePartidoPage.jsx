@@ -85,13 +85,14 @@ const DetallePartidoPage = () => {
     resultado_equipo_a: partido?.resultado_equipo_a ?? 0,
     resultado_equipo_b: partido?.resultado_equipo_b ?? 0,
     mvp_id: partido?.mvp_id || '',
+    mvp_invitado_id: partido?.mvp_invitado_id || '',
     ubicacion: partido?.ubicacion || '',
     ubicacion_url: partido?.ubicacion_url || '',
   });
 
   // Form State para agregar evento
   const [nuevoEvento, setNuevoEvento] = useState({
-    jugador_id: '',
+    participant_id: '', // puede ser jugador_id o invitado_id con prefijo 'inv:'
     tipo: 'gol',
     minuto: 1,
   });
@@ -183,6 +184,7 @@ const DetallePartidoPage = () => {
       resultado_equipo_a: parseInt(editForm.resultado_equipo_a) || 0,
       resultado_equipo_b: parseInt(editForm.resultado_equipo_b) || 0,
       mvp_id: editForm.mvp_id || null,
+      mvp_invitado_id: editForm.mvp_invitado_id || null,
       ubicacion: editForm.ubicacion,
       ubicacion_url: editForm.ubicacion_url,
     });
@@ -192,14 +194,21 @@ const DetallePartidoPage = () => {
 
   const handleAddEvento = (e) => {
     e.preventDefault();
-    if (!nuevoEvento.jugador_id) return;
+    if (!nuevoEvento.participant_id) return;
+    
+    const isInvitado = nuevoEvento.participant_id.startsWith('inv:');
+    const realId = isInvitado
+      ? nuevoEvento.participant_id.replace('inv:', '')
+      : nuevoEvento.participant_id;
+
     addEvento(partido.id, {
-      jugador_id: nuevoEvento.jugador_id,
+      jugador_id: isInvitado ? null : realId,
+      invitado_id: isInvitado ? realId : null,
       tipo: nuevoEvento.tipo,
       minuto: parseInt(nuevoEvento.minuto) || 1,
     });
     setIsEventModalOpen(false);
-    setNuevoEvento({ jugador_id: '', tipo: 'gol', minuto: 1 });
+    setNuevoEvento({ participant_id: '', tipo: 'gol', minuto: 1 });
   };
 
   const handleInviteJugadores = async (e) => {
@@ -633,7 +642,10 @@ const DetallePartidoPage = () => {
             [...partido.eventos]
               .sort((a, b) => a.minuto - b.minuto)
               .map((evento) => {
+                // Nombre: puede ser jugador del plantel o invitado
                 const jugador = getJugador(evento.jugador_id);
+                const nombreParticipante = evento._nombre_invitado || jugador?.nombre || 'Desconocido';
+                const esInvitado = !!evento._nombre_invitado;
                 return (
                   <div
                     key={evento.id}
@@ -646,7 +658,10 @@ const DetallePartidoPage = () => {
                       <span className="text-sm font-semibold text-gray-800">
                         {eventoEmoji[evento.tipo]}
                       </span>
-                      <span className="text-sm text-gray-700 font-medium">{jugador?.nombre}</span>
+                      <span className="text-sm text-gray-700 font-medium">{nombreParticipante}</span>
+                      {esInvitado && (
+                        <span className="text-[10px] text-purple-500 font-semibold bg-purple-50 px-1.5 py-0.5 rounded">Extra</span>
+                      )}
                     </div>
 
                     {isAdmin && (
@@ -714,12 +729,26 @@ const DetallePartidoPage = () => {
           <Select
             label="Elegir MVP (Mejor Jugador)"
             value={editForm.mvp_id}
-            onChange={(e) => setEditForm({ ...editForm, mvp_id: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              const isInv = val.startsWith('inv:');
+              setEditForm({
+                ...editForm,
+                mvp_id: isInv ? '' : val,
+                mvp_invitado_id: isInv ? val.replace('inv:', '') : '',
+              });
+            }}
             placeholder="-- Ninguno asignado --"
-            options={allJugadores.map((j) => ({
-              value: j.id,
-              label: `${j.nombre} (${j.posicion_preferida})`,
-            }))}
+            options={[
+              ...allJugadores.map((j) => ({
+                value: j.id,
+                label: `${j.nombre} (${j.posicion_preferida})`,
+              })),
+              ...(partido.invitados_partido || []).map((pi) => ({
+                value: `inv:${pi.invitado_id}`,
+                label: `${pi.invitados?.nombre} ⭐ Extra`,
+              })),
+            ]}
           />
 
           <Input
@@ -786,14 +815,22 @@ const DetallePartidoPage = () => {
       >
         <form id="form-add-evento" onSubmit={handleAddEvento} className="space-y-4">
           <Select
-            label="Jugador involucrado"
-            value={nuevoEvento.jugador_id}
-            onChange={(e) => setNuevoEvento({ ...nuevoEvento, jugador_id: e.target.value })}
-            placeholder="Seleccionar jugador"
-            options={allJugadores.map((j) => ({
-              value: j.id,
-              label: `${j.nombre} (${j.posicion_preferida})`,
-            }))}
+            label="Participante involucrado"
+            value={nuevoEvento.participant_id}
+            onChange={(e) => setNuevoEvento({ ...nuevoEvento, participant_id: e.target.value })}
+            placeholder="Seleccionar jugador o extra"
+            options={[
+              ...allJugadores
+                .filter(j => (partido.jugadores || []).some(pj => pj.jugador_id === j.id))
+                .map((j) => ({
+                  value: j.id,
+                  label: `${j.nombre} (${j.posicion_preferida})`,
+                })),
+              ...(partido.invitados_partido || []).map((pi) => ({
+                value: `inv:${pi.invitado_id}`,
+                label: `${pi.invitados?.nombre} (Extra)`,
+              })),
+            ]}
             required
           />
 

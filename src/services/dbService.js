@@ -160,7 +160,7 @@ export const dbService = {
           .select(`
             *,
             partido_jugadores (*),
-            partido_eventos (*),
+            partido_eventos (*, invitados(*)),
             partido_invitados (*, invitados (*))
           `)
           .order('fecha', { ascending: false });
@@ -172,7 +172,11 @@ export const dbService = {
             ubicacion: p.lugar,
             ubicacion_url: p.mapa_url,
             jugadores: p.partido_jugadores || [],
-            eventos: p.partido_eventos || [],
+            eventos: (p.partido_eventos || []).map(ev => ({
+              ...ev,
+              // nombre del participante, sea jugador o invitado
+              _nombre_invitado: ev.invitados?.nombre || null,
+            })),
             invitados_partido: p.partido_invitados || [],
           }));
         }
@@ -293,17 +297,27 @@ export const dbService = {
   async addEvento(partidoId, evento) {
     if (isSupabaseConfigured) {
       try {
+        const payload = {
+          partido_id: partidoId,
+          tipo: evento.tipo,
+          minuto: evento.minuto,
+        };
+        // Un evento puede ser de jugador del plantel o de invitado
+        if (evento.invitado_id) {
+          payload.invitado_id = evento.invitado_id;
+          payload.jugador_id = null;
+        } else {
+          payload.jugador_id = evento.jugador_id;
+        }
         const { data, error } = await supabase
           .from('partido_eventos')
-          .insert([{
-            partido_id: partidoId,
-            jugador_id: evento.jugador_id,
-            tipo: evento.tipo,
-            minuto: evento.minuto,
-          }])
-          .select()
+          .insert([payload])
+          .select('*, invitados(*)')
           .single();
-        if (!error && data) return data;
+        if (!error && data) return {
+          ...data,
+          _nombre_invitado: data.invitados?.nombre || null,
+        };
       } catch (err) {
         console.warn('Error adding event in Supabase:', err);
       }
