@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Target, Trophy, AlertTriangle, Star, Activity, User } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Avatar from '../../components/ui/Avatar';
+import FifaCard from '../../components/ui/FifaCard';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
 import { calculatePersonalStats } from '../../services/statsService';
@@ -15,7 +16,7 @@ import {
 } from 'recharts';
 
 const EstadisticasPage = () => {
-  const { user, jugadores } = useAuth();
+  const { user, jugadores, equipo } = useAuth();
   const { partidos } = usePartidos();
 
   // Calculate personal stats using the new service function
@@ -23,7 +24,7 @@ const EstadisticasPage = () => {
     return calculatePersonalStats(user?.id, jugadores, partidos);
   }, [user?.id, jugadores, partidos]);
 
-  const { stats, radarData, maximosEquipo } = personalData;
+  const { stats, media, radarData, maximosEquipo } = personalData;
 
   if (!user) return null;
 
@@ -63,15 +64,21 @@ const EstadisticasPage = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Nueva Tarjeta Estilo FIFA */}
+        <div className="flex justify-center items-center h-full lg:col-span-1">
+          <FifaCard player={user} media={media} equipo={equipo} />
+        </div>
+
         {/* Radar Chart */}
-        <Card className="p-6">
+        <Card className="p-6 lg:col-span-1 flex flex-col">
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
             Pentágono de Rendimiento
           </h2>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="60%">
                 <PolarGrid stroke="#E5E7EB" />
                 <PolarAngleAxis dataKey="stat" tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} />
                 <PolarRadiusAxis tick={false} axisLine={false} domain={[0, 100]} />
@@ -91,7 +98,7 @@ const EstadisticasPage = () => {
         </Card>
 
         {/* Detalles e Insights Personales */}
-        <div className="space-y-6 flex flex-col">
+        <div className="space-y-6 flex flex-col lg:col-span-1">
           <Card className="p-6 flex-1 flex flex-col">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100">
               Resumen de Desempeño

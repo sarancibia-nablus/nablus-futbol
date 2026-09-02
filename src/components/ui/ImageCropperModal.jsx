@@ -24,6 +24,8 @@ const getCroppedImg = async (imageSrc, pixelCrop) => {
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
+  // No agregamos fondo blanco para preservar la transparencia original (útil en logos)
+  
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -39,7 +41,7 @@ const getCroppedImg = async (imageSrc, pixelCrop) => {
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
       resolve(blob);
-    }, 'image/jpeg');
+    }, 'image/png'); // Exportar como PNG para preservar el fondo transparente
   });
 };
 
@@ -60,14 +62,15 @@ const ImageCropperModal = ({ isOpen, onClose, imageSrc, onCropComplete, title = 
 
       // Optimizar/comprimir usando browser-image-compression
       const options = {
-        maxSizeMB: 0.5,
+        maxSizeMB: 2, // Aumentado a 2MB para preservar máxima calidad en PNG
         maxWidthOrHeight: 800,
         useWebWorker: true,
+        fileType: 'image/png', // Forzar compresión a PNG para mantener canal alpha
       };
       
       const compressedFile = await imageCompression(croppedBlob, options);
       // Convertir Blob a File
-      const finalFile = new File([compressedFile], 'cropped_image.jpg', { type: 'image/jpeg' });
+      const finalFile = new File([compressedFile], 'cropped_image.png', { type: 'image/png' });
       
       await onCropComplete(finalFile);
     } catch (err) {

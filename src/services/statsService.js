@@ -61,7 +61,7 @@ export const calculatePlayerStats = (jugadorId, partidos = []) => {
     ? (goles / partidosJugados).toFixed(2) 
     : '0.00';
 
-  return {
+  const playerStatsBase = {
     partidos: partidosJugados,
     goles,
     asistencias,
@@ -71,6 +71,73 @@ export const calculatePlayerStats = (jugadorId, partidos = []) => {
     victorias: partidosGanados,
     efectividad,
     promedio_goles: promedioGoles,
+  };
+
+  return playerStatsBase;
+};
+
+export const calculatePlayerOverall = (stats, posicion_preferida = 'mediocampo') => {
+  // Base rating
+  let ovr = 70;
+  const p = stats.partidos || 1; // avoid division by zero
+
+  const gp = stats.goles / p;
+  const ap = stats.asistencias / p;
+  const mp = stats.mvps / p;
+
+  let sho = 50;
+  let pas = 50;
+  let dri = 50;
+  let def = 50;
+  let phy = 50;
+  let pac = 70; // Ritmo base
+
+  // Positional weighting
+  if (posicion_preferida === 'delantero') {
+    ovr += (gp * 12) + (ap * 4) + (mp * 5);
+    sho = 65 + (gp * 25);
+    pas = 55 + (ap * 15);
+    def = 30 + (stats.victorias / p * 10);
+    phy = 60 + (stats.partidos * 0.5);
+    dri = 65 + (mp * 20);
+  } else if (posicion_preferida === 'mediocampo') {
+    ovr += (gp * 7) + (ap * 9) + (mp * 6);
+    sho = 55 + (gp * 20);
+    pas = 65 + (ap * 25);
+    def = 55 + (stats.victorias / p * 15);
+    phy = 65 + (stats.partidos * 0.5);
+    dri = 65 + (mp * 15);
+  } else if (posicion_preferida === 'defensa') {
+    ovr += (gp * 4) + (mp * 10) + (stats.victorias / p * 8);
+    sho = 40 + (gp * 30);
+    pas = 55 + (ap * 20);
+    def = 70 + (stats.victorias / p * 20);
+    phy = 75 + (stats.partidos * 0.5);
+    dri = 50 + (mp * 15);
+  } else if (posicion_preferida === 'arquero') {
+    ovr += (mp * 15) + (stats.victorias / p * 10);
+    // Para arqueros se usan DIV, HAN, KIC, REF, SPD, POS pero mapearemos a la carta base
+    sho = 30; // KIC
+    pas = 60; // HAN
+    def = 75 + (stats.victorias / p * 15); // DIV/REF
+    phy = 70 + (stats.partidos * 0.5); 
+    dri = 75 + (mp * 15); // POS
+  }
+
+  // Penalty por indisciplina
+  ovr -= (stats.tarjetas_amarillas / p * 3) + (stats.tarjetas_rojas / p * 7);
+
+  // Normalizar máximos
+  const clamp = (val) => Math.min(Math.max(Math.round(val), 40), 99);
+
+  return {
+    ovr: clamp(ovr),
+    pac: clamp(pac),
+    sho: clamp(sho),
+    pas: clamp(pas),
+    dri: clamp(dri),
+    def: clamp(def),
+    phy: clamp(phy),
   };
 };
 
@@ -220,8 +287,12 @@ export const calculatePersonalStats = (jugadorId, jugadores = [], partidos = [])
     },
   ];
 
+  const profile = jugadores.find(j => j.id === jugadorId);
+  const media = calculatePlayerOverall(myStats, profile?.posicion_preferida);
+
   return {
     stats: myStats,
+    media,
     radarData: personalRadarData,
     maximosEquipo: {
       goles: maxGoles,
