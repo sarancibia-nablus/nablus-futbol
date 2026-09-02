@@ -9,12 +9,12 @@ async function runTest() {
   
   try {
     console.log('Inserting into auth.users to trigger handle_new_user...');
-    const uuid = '11111111-2222-3333-4444-555555555555';
-    
     const res = await client.query(`
-      DELETE FROM auth.users WHERE id = $1;
-    `, [uuid]);
-    console.log('Success! Test user deleted.');
+      SELECT tablename, policyname, cmd, qual 
+      FROM pg_policies 
+      WHERE schemaname = 'public';
+    `);
+    console.table(res.rows);
   } catch (err) {
     console.error('Trigger Error:', err);
   } finally {

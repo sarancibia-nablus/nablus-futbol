@@ -1,14 +1,22 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { dbService } from '../services/dbService';
+import { useAuth } from './AuthContext';
 
 const PartidosContext = createContext(null);
 
 export const PartidosProvider = ({ children }) => {
   const [partidos, setPartidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
 
-  // Load real matches from database on mount
+  // Load real matches from database when user is authenticated
   useEffect(() => {
+    if (!isAuthenticated) {
+      setPartidos([]);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     const fetchPartidos = async () => {
       setLoading(true);
@@ -28,7 +36,7 @@ export const PartidosProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const getPartidoById = (id) => {
     return partidos.find((p) => p.id === id);
