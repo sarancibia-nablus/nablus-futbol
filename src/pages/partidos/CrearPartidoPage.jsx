@@ -11,7 +11,7 @@ import { usePartidos } from '../../context/PartidosContext';
 
 const CrearPartidoPage = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, jugadores } = useAuth();
+  const { user, isAdmin, jugadores, equipo } = useAuth();
   const { createPartido } = usePartidos();
 
   // Protect route if user is not admin
@@ -69,7 +69,7 @@ const CrearPartidoPage = () => {
 
     try {
       const nuevo = await createPartido({
-        equipo_id: '1',
+        equipo_id: equipo?.id, // ID real de Supabase (UUID)
         fecha: `${form.fecha}T${form.hora}:00`,
         ubicacion: form.ubicacion,
         ubicacion_url: form.ubicacion_url,
