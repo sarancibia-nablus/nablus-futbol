@@ -18,7 +18,7 @@ import Button from '../../components/ui/Button';
 import { Input, Select } from '../../components/ui/Input';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
-import dbService from '../../services/dbService';
+import { dbService } from '../../services/dbService';
 import ImageCropperModal from '../../components/ui/ImageCropperModal';
 
 const EquipoPage = () => {
