@@ -56,7 +56,7 @@ const eventoEmoji = {
 const DetallePartidoPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAdmin, jugadores: allJugadores, equipo } = useAuth();
+  const { user, isAdmin, jugadores: allJugadores, plantel, invitados, equipo } = useAuth();
   const {
     getPartidoById,
     updatePartido,
@@ -75,6 +75,7 @@ const DetallePartidoPage = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [showGraphicModal, setShowGraphicModal] = useState(false);
   const [selectedInvitados, setSelectedInvitados] = useState([]);
+  const [inviteModalTab, setInviteModalTab] = useState('plantel');
 
   // Form State para edición de partido
   const [editForm, setEditForm] = useState({
@@ -200,10 +201,12 @@ const DetallePartidoPage = () => {
     e.preventDefault();
     if (selectedInvitados.length === 0) return;
 
+    const isGuestId = (jugadorId) => invitados.some(inv => inv.id === jugadorId);
+
     const nuevosJugadores = selectedInvitados.map((jugadorId) => ({
       jugador_id: jugadorId,
       equipo_partido: null,
-      estado_invitacion: 'pendiente',
+      estado_invitacion: isGuestId(jugadorId) ? 'confirmado' : 'pendiente',
     }));
 
     updatePartido(partido.id, {
@@ -223,6 +226,11 @@ const DetallePartidoPage = () => {
   const uninvitedJugadores = allJugadores.filter(
     (j) => !(partido.jugadores || []).some((pj) => pj.jugador_id === j.id)
   );
+  
+  const uninvitedPlantel = uninvitedJugadores.filter(j => plantel.some(p => p.id === j.id));
+  const uninvitedExtras = uninvitedJugadores.filter(j => invitados.some(inv => inv.id === j.id));
+  
+  const activeUninvitedList = inviteModalTab === 'plantel' ? uninvitedPlantel : uninvitedExtras;
 
   // Check current user status
   const currentUserRecord = partido.jugadores?.find((j) => j.jugador_id === user?.id);
@@ -869,18 +877,37 @@ const DetallePartidoPage = () => {
       {isInviteModalOpen && (
         <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <Card className="max-w-md w-full p-6 animate-scale-in flex flex-col max-h-[90vh]">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Invitar Jugadores</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Añadir Participantes</h2>
             <p className="text-sm text-gray-500 mb-4">
-              Selecciona a los jugadores que deseas agregar a la convocatoria de este partido.
+              Selecciona a los jugadores que deseas agregar a este partido.
             </p>
             
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+              <button
+                onClick={() => setInviteModalTab('plantel')}
+                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  inviteModalTab === 'plantel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Plantel Oficial
+              </button>
+              <button
+                onClick={() => setInviteModalTab('invitados')}
+                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  inviteModalTab === 'invitados' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Extras / Invitados
+              </button>
+            </div>
+
             <div className="flex-1 overflow-y-auto space-y-2 mb-4 border border-gray-100 rounded-xl p-2 bg-gray-50/50">
-              {uninvitedJugadores.length === 0 ? (
+              {activeUninvitedList.length === 0 ? (
                 <p className="text-sm text-center text-gray-500 py-4">
-                  Todos los jugadores del plantel ya están invitados.
+                  No hay {inviteModalTab === 'plantel' ? 'jugadores del plantel' : 'invitados'} disponibles para agregar.
                 </p>
               ) : (
-                uninvitedJugadores.map((jugador) => (
+                activeUninvitedList.map((jugador) => (
                   <label
                     key={jugador.id}
                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
@@ -898,7 +925,10 @@ const DetallePartidoPage = () => {
                     <Avatar name={jugador.nombre} src={jugador.avatar_url} size="sm" />
                     <div>
                       <div className="text-sm font-semibold text-gray-900">{jugador.nombre}</div>
-                      <div className="text-xs text-gray-500 capitalize">{jugador.posicion_preferida}</div>
+                      <div className="text-xs text-gray-500 capitalize">
+                        {jugador.posicion_preferida} 
+                        {inviteModalTab === 'invitados' && ' (Entra como confirmado)'}
+                      </div>
                     </div>
                   </label>
                 ))
@@ -906,11 +936,14 @@ const DetallePartidoPage = () => {
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100 mt-auto">
-              <Button variant="secondary" onClick={() => setIsInviteModalOpen(false)}>
+              <Button variant="secondary" onClick={() => {
+                setIsInviteModalOpen(false);
+                setSelectedInvitados([]);
+              }}>
                 Cancelar
               </Button>
               <Button onClick={handleInviteJugadores} disabled={selectedInvitados.length === 0}>
-                Enviar Invitaciones
+                Añadir Seleccionados ({selectedInvitados.length})
               </Button>
             </div>
           </Card>

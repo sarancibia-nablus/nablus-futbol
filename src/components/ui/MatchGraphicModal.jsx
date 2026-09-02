@@ -126,7 +126,7 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
                   </div>
                 )}
                 
-                <h1 className="text-4xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300 drop-shadow-sm leading-none">
+                <h1 className="text-[3.2rem] font-black italic uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300 drop-shadow-sm leading-none px-2 overflow-visible">
                   Match Day
                 </h1>
                 

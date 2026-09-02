@@ -1,13 +1,17 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, ShieldCheck, Trash2 } from 'lucide-react';
+import { Shield, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import Table from '../../components/ui/Table';
 import Avatar from '../../components/ui/Avatar';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import { Input, Select } from '../../components/ui/Input';
 import { posiciones } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
 import { calculatePlayerStats, calculatePlayerOverall } from '../../services/statsService';
+import { createGuestUser } from '../../services/guestService';
 
 const posicionBadge = {
   arquero: 'danger',
@@ -18,12 +22,20 @@ const posicionBadge = {
 
 const JugadoresPage = () => {
   const navigate = useNavigate();
-  const { jugadores, isAdmin, setRole, removeJugador } = useAuth();
+  const { plantel, invitados, isAdmin, setRole, removeJugador } = useAuth();
   const { partidos } = usePartidos();
+
+  const [activeTab, setActiveTab] = useState('plantel');
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+  const [loadingGuest, setLoadingGuest] = useState(false);
+  const [guestForm, setGuestForm] = useState({ nombre: '', email: '', posicion_preferida: 'mediocampo' });
+
+  // Filter based on active tab
+  const activeData = activeTab === 'plantel' ? plantel : invitados;
 
   // Combine player profiles with dynamically computed real match stats
   const playersWithStats = useMemo(() => {
-    return jugadores.map((j) => {
+    return activeData.map((j) => {
       const stats = calculatePlayerStats(j.id, partidos);
       const media = calculatePlayerOverall(stats, j.posicion_preferida);
       return {
@@ -32,7 +44,7 @@ const JugadoresPage = () => {
         media,
       };
     });
-  }, [jugadores, partidos]);
+  }, [activeData, partidos]);
 
   const baseColumns = [
     {
@@ -170,21 +182,105 @@ const JugadoresPage = () => {
     return cols;
   }, [isAdmin, setRole, removeJugador]);
 
+  const handleCreateGuest = async (e) => {
+    e.preventDefault();
+    if (!guestForm.nombre) return;
+    try {
+      setLoadingGuest(true);
+      await createGuestUser(guestForm.nombre, guestForm.posicion_preferida, guestForm.email || undefined);
+      // Recargar la pagina para que authContext pida los nuevos datos
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Error al crear el invitado: ' + err.message);
+    } finally {
+      setLoadingGuest(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plantel de Jugadores</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{jugadores.length} jugadores registrados en Nablus</p>
+          <h1 className="text-2xl font-bold text-gray-900">Directorio</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{plantel.length} jugadores • {invitados.length} invitados</p>
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex bg-gray-100 p-1 rounded-lg">
+          <button
+            onClick={() => setActiveTab('plantel')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'plantel' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Plantel Oficial
+          </button>
+          <button
+            onClick={() => setActiveTab('invitados')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'invitados' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Extras
+          </button>
         </div>
       </div>
 
-      <Table
-        columns={columns}
-        data={playersWithStats}
-        searchPlaceholder="Buscar por nombre o correo..."
-        onRowClick={(row) => navigate(`/jugadores/${row.id}`)}
-      />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4">
+        <Table
+          columns={columns}
+          data={playersWithStats}
+          searchPlaceholder="Buscar por nombre o correo..."
+          onRowClick={(row) => activeTab === 'plantel' ? navigate(`/jugadores/${row.id}`) : null}
+          toolbar={
+            activeTab === 'invitados' && isAdmin ? (
+              <Button onClick={() => setIsGuestModalOpen(true)} icon={UserPlus}>
+                Nuevo Invitado
+              </Button>
+            ) : null
+          }
+        />
+      </div>
+
+      <Modal
+        isOpen={isGuestModalOpen}
+        onClose={() => setIsGuestModalOpen(false)}
+        title="Añadir Invitado Extra"
+        description="Los invitados no tienen acceso a la app, pero pueden ser incluidos en los partidos del equipo."
+      >
+        <form onSubmit={handleCreateGuest} className="space-y-4">
+          <Input
+            label="Nombre completo"
+            required
+            value={guestForm.nombre}
+            onChange={(e) => setGuestForm({ ...guestForm, nombre: e.target.value })}
+            placeholder="Ej: Marcelo Salas"
+          />
+          <Input
+            label="Correo electrónico (Opcional)"
+            type="email"
+            value={guestForm.email}
+            onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })}
+            placeholder="marcelo@correo.com"
+          />
+          <Select
+            label="Posición"
+            options={posiciones}
+            value={guestForm.posicion_preferida}
+            onChange={(e) => setGuestForm({ ...guestForm, posicion_preferida: e.target.value })}
+          />
+          <div className="flex gap-3 mt-6">
+            <Button type="button" variant="secondary" onClick={() => setIsGuestModalOpen(false)} className="flex-1">
+              Cancelar
+            </Button>
+            <Button type="submit" loading={loadingGuest} className="flex-1">
+              Guardar Invitado
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   );
 };

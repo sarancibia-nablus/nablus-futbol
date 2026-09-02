@@ -7,7 +7,8 @@ const Table = ({
   searchable = true, 
   searchPlaceholder = 'Buscar...', 
   onRowClick,
-  emptyMessage = 'No hay datos disponibles'
+  emptyMessage = 'No hay datos disponibles',
+  toolbar = null,
 }) => {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState(null);
@@ -48,16 +49,21 @@ const Table = ({
 
   return (
     <div className="space-y-4">
-      {searchable && (
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nablus-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="input-field pl-10 py-2.5 text-sm"
-          />
+      {(searchable || toolbar) && (
+        <div className="flex items-center gap-3">
+          {searchable && (
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nablus-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="input-field pl-10 py-2.5 text-sm w-full"
+              />
+            </div>
+          )}
+          {toolbar && <div className="ml-auto">{toolbar}</div>}
         </div>
       )}
 

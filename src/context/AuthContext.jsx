@@ -7,6 +7,8 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [jugadores, setJugadores] = useState([]);
+  const [plantel, setPlantel] = useState([]);
+  const [invitados, setInvitados] = useState([]);
   const [user, setUser] = useState(null);
   const [equipo, setEquipo] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,7 +27,10 @@ export const AuthProvider = ({ children }) => {
         ]);
 
         if (isMounted) {
-          setJugadores(fetchedJugadores || []);
+          const allJugadores = fetchedJugadores || [];
+          setJugadores(allJugadores);
+          setPlantel(allJugadores.filter(j => !j.email?.startsWith('guest_')));
+          setInvitados(allJugadores.filter(j => j.email?.startsWith('guest_')));
           setEquipo(fetchedEquipo || null);
 
           // 1. Check Supabase session first
@@ -147,6 +152,8 @@ export const AuthProvider = ({ children }) => {
       dbService.getEquipo(),
     ]);
     setJugadores(fetchedJugadores || []);
+    setPlantel((fetchedJugadores || []).filter(j => !j.email?.startsWith('guest_')));
+    setInvitados((fetchedJugadores || []).filter(j => j.email?.startsWith('guest_')));
     setEquipo(fetchedEquipo || null);
     if (fetchedJugadores && fetchedJugadores.length > 0) {
       setUser(fetchedJugadores[0]);
@@ -275,6 +282,8 @@ export const AuthProvider = ({ children }) => {
     };
     const updated = [...jugadores, newPlayer];
     setJugadores(updated);
+    setPlantel(updated.filter(j => !j.email?.startsWith('guest_')));
+    setInvitados(updated.filter(j => j.email?.startsWith('guest_')));
     setUser(newPlayer);
     setIsAuthenticated(true);
     localStorage.setItem(LOCAL_STORAGE_AUTH_USER, newPlayer.id);
@@ -321,9 +330,12 @@ export const AuthProvider = ({ children }) => {
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
     await dbService.updateUser(user.id, updatedData);
-    setJugadores((prev) =>
-      prev.map((j) => (j.id === updatedUser.id ? { ...j, ...updatedData } : j))
-    );
+    setJugadores((prev) => {
+      const next = prev.map((j) => (j.id === updatedUser.id ? { ...j, ...updatedData } : j));
+      setPlantel(next.filter(j => !j.email?.startsWith('guest_')));
+      setInvitados(next.filter(j => j.email?.startsWith('guest_')));
+      return next;
+    });
     return { success: true };
   };
 
@@ -339,9 +351,12 @@ export const AuthProvider = ({ children }) => {
   // Set Role (Capitán can promote/demote members)
   const setRole = async (userId, es_admin) => {
     await dbService.updateUser(userId, { es_admin });
-    setJugadores((prev) =>
-      prev.map((j) => (j.id === userId ? { ...j, es_admin } : j))
-    );
+    setJugadores((prev) => {
+      const next = prev.map((j) => (j.id === userId ? { ...j, es_admin } : j));
+      setPlantel(next.filter(j => !j.email?.startsWith('guest_')));
+      setInvitados(next.filter(j => j.email?.startsWith('guest_')));
+      return next;
+    });
     if (user?.id === userId) {
       setUser((prev) => ({ ...prev, es_admin }));
     }
@@ -351,7 +366,12 @@ export const AuthProvider = ({ children }) => {
   // Remove Jugador (Admin)
   const removeJugador = async (userId) => {
     await dbService.deleteJugador(userId);
-    setJugadores((prev) => prev.filter((j) => j.id !== userId));
+    setJugadores((prev) => {
+      const next = prev.filter((j) => j.id !== userId);
+      setPlantel(next.filter(j => !j.email?.startsWith('guest_')));
+      setInvitados(next.filter(j => j.email?.startsWith('guest_')));
+      return next;
+    });
     return { success: true };
   };
 
@@ -363,6 +383,8 @@ export const AuthProvider = ({ children }) => {
         isCapitan,
         equipo,
         jugadores,
+        plantel,
+        invitados,
         isAuthenticated,
         loading,
         login,
