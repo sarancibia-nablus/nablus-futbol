@@ -160,7 +160,8 @@ export const dbService = {
           .select(`
             *,
             partido_jugadores (*),
-            partido_eventos (*)
+            partido_eventos (*),
+            partido_invitados (*, invitados (*))
           `)
           .order('fecha', { ascending: false });
 
@@ -172,6 +173,7 @@ export const dbService = {
             ubicacion_url: p.mapa_url,
             jugadores: p.partido_jugadores || [],
             eventos: p.partido_eventos || [],
+            invitados_partido: p.partido_invitados || [],
           }));
         }
       } catch (err) {
@@ -375,6 +377,87 @@ export const dbService = {
     const updated = [...filtered, ...slots.map((s) => ({ ...s, jugador_id: jugadorId }))];
     localStorage.setItem(LOCAL_STORAGE_KEY_DISP, JSON.stringify(updated));
     return true;
+  },
+
+  // 4b. Invitados (jugadores sin cuenta)
+  async getInvitados() {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('invitados')
+          .select('*')
+          .order('nombre', { ascending: true });
+        if (!error && Array.isArray(data)) return data;
+      } catch (err) {
+        console.warn('Error querying invitados:', err);
+      }
+    }
+    return [];
+  },
+
+  async createInvitado(invitadoData) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('invitados')
+        .insert([invitadoData])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw new Error('Supabase no configurado');
+  },
+
+  async deleteInvitado(id) {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('invitados').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    }
+    throw new Error('Supabase no configurado');
+  },
+
+  async addInvitadoToPartido(partidoId, invitadoId, equipoPartido = null) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('partido_invitados')
+        .upsert([{ partido_id: partidoId, invitado_id: invitadoId, equipo_partido: equipoPartido }], {
+          onConflict: 'partido_id,invitado_id',
+        })
+        .select('*, invitados(*)')
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw new Error('Supabase no configurado');
+  },
+
+  async updateInvitadoPartido(partidoId, invitadoId, equipoPartido) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('partido_invitados')
+        .update({ equipo_partido: equipoPartido })
+        .eq('partido_id', partidoId)
+        .eq('invitado_id', invitadoId)
+        .select('*, invitados(*)')
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw new Error('Supabase no configurado');
+  },
+
+  async removeInvitadoFromPartido(partidoId, invitadoId) {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from('partido_invitados')
+        .delete()
+        .eq('partido_id', partidoId)
+        .eq('invitado_id', invitadoId);
+      if (error) throw error;
+      return true;
+    }
+    throw new Error('Supabase no configurado');
   },
 
   // 5. Función de Inicialización / Semilla

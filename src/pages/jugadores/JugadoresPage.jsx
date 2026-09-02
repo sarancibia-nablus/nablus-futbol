@@ -11,7 +11,6 @@ import { posiciones } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
 import { calculatePlayerStats, calculatePlayerOverall } from '../../services/statsService';
-import { createGuestUser } from '../../services/guestService';
 
 const posicionBadge = {
   arquero: 'danger',
@@ -22,7 +21,7 @@ const posicionBadge = {
 
 const JugadoresPage = () => {
   const navigate = useNavigate();
-  const { plantel, invitados, isAdmin, setRole, removeJugador } = useAuth();
+  const { plantel, invitados, isAdmin, setRole, removeJugador, createInvitado, deleteInvitado } = useAuth();
   const { partidos } = usePartidos();
 
   const [activeTab, setActiveTab] = useState('plantel');
@@ -35,6 +34,7 @@ const JugadoresPage = () => {
 
   // Combine player profiles with dynamically computed real match stats
   const playersWithStats = useMemo(() => {
+    if (activeTab === 'invitados') return invitados;
     return activeData.map((j) => {
       const stats = calculatePlayerStats(j.id, partidos);
       const media = calculatePlayerOverall(stats, j.posicion_preferida);
@@ -44,7 +44,7 @@ const JugadoresPage = () => {
         media,
       };
     });
-  }, [activeData, partidos]);
+  }, [activeTab, activeData, invitados, partidos]);
 
   const baseColumns = [
     {
@@ -145,6 +145,59 @@ const JugadoresPage = () => {
   ];
 
   const columns = useMemo(() => {
+    if (activeTab === 'invitados') {
+      const cols = [
+        {
+          key: 'nombre',
+          header: 'Invitado',
+          accessor: 'nombre',
+          sortable: true,
+          render: (row) => (
+            <div className="flex items-center gap-3">
+              <Avatar name={row.nombre} size="sm" />
+              <div>
+                <div className="font-semibold text-gray-900 text-sm">{row.nombre}</div>
+                {row.email && <div className="text-xs text-gray-400">{row.email}</div>}
+              </div>
+            </div>
+          ),
+        },
+        {
+          key: 'posicion',
+          header: 'Posición',
+          accessor: 'posicion_preferida',
+          render: (row) => (
+            <Badge variant={posicionBadge[row.posicion_preferida] || 'default'} className="capitalize">
+              {row.posicion_preferida}
+            </Badge>
+          ),
+        },
+      ];
+      if (isAdmin) {
+        cols.push({
+          key: 'delete',
+          header: '',
+          accessor: 'id',
+          render: (row) => (
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={async () => {
+                  if (window.confirm(`¿Eliminar a ${row.nombre} de la lista de invitados?`)) {
+                    await deleteInvitado(row.id);
+                  }
+                }}
+                className="p-1.5 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors"
+                title="Eliminar invitado"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ),
+        });
+      }
+      return cols;
+    }
+
     const cols = [...baseColumns];
     if (isAdmin) {
       cols.push({
@@ -187,9 +240,13 @@ const JugadoresPage = () => {
     if (!guestForm.nombre) return;
     try {
       setLoadingGuest(true);
-      await createGuestUser(guestForm.nombre, guestForm.posicion_preferida, guestForm.email || undefined);
-      // Recargar la pagina para que authContext pida los nuevos datos
-      window.location.reload();
+      await createInvitado({
+        nombre: guestForm.nombre,
+        email: guestForm.email || null,
+        posicion_preferida: guestForm.posicion_preferida,
+      });
+      setIsGuestModalOpen(false);
+      setGuestForm({ nombre: '', email: '', posicion_preferida: 'mediocampo' });
     } catch (err) {
       console.error(err);
       alert('Error al crear el invitado: ' + err.message);

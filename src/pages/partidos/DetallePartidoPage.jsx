@@ -63,6 +63,8 @@ const DetallePartidoPage = () => {
     addEvento,
     removeEvento,
     updateJugadorInvitacion,
+    addInvitadoToPartido,
+    updateInvitadoPartido,
   } = usePartidos();
 
   const partido = getPartidoById(id);
@@ -120,18 +122,21 @@ const DetallePartidoPage = () => {
 
   const mvp = getJugador(partido.mvp_id);
 
-  // Jugadores clasificados
-  const equipoA = (partido.jugadores || [])
-    .filter((j) => j.equipo_partido === 'equipo_a')
-    .map((j) => ({ ...j, jugador: getJugador(j.jugador_id) }));
+  // Jugadores clasificados (miembros del plantel)
+  const equipoA = [
+    ...(partido.jugadores || []).filter(j => j.equipo_partido === 'equipo_a').map(j => ({ ...j, jugador: getJugador(j.jugador_id) })),
+    ...(partido.invitados_partido || []).filter(i => i.equipo_partido === 'equipo_a').map(i => ({ id: i.id, invitado_id: i.invitado_id, equipo_partido: i.equipo_partido, isInvitado: true, jugador: { nombre: i.invitados?.nombre || 'Invitado', posicion_preferida: i.invitados?.posicion_preferida } })),
+  ];
 
-  const equipoB = (partido.jugadores || [])
-    .filter((j) => j.equipo_partido === 'equipo_b')
-    .map((j) => ({ ...j, jugador: getJugador(j.jugador_id) }));
+  const equipoB = [
+    ...(partido.jugadores || []).filter(j => j.equipo_partido === 'equipo_b').map(j => ({ ...j, jugador: getJugador(j.jugador_id) })),
+    ...(partido.invitados_partido || []).filter(i => i.equipo_partido === 'equipo_b').map(i => ({ id: i.id, invitado_id: i.invitado_id, equipo_partido: i.equipo_partido, isInvitado: true, jugador: { nombre: i.invitados?.nombre || 'Invitado', posicion_preferida: i.invitados?.posicion_preferida } })),
+  ];
 
-  const sinEquipo = (partido.jugadores || [])
-    .filter((j) => !j.equipo_partido)
-    .map((j) => ({ ...j, jugador: getJugador(j.jugador_id) }));
+  const sinEquipo = [
+    ...(partido.jugadores || []).filter(j => !j.equipo_partido).map(j => ({ ...j, jugador: getJugador(j.jugador_id) })),
+    ...(partido.invitados_partido || []).filter(i => !i.equipo_partido).map(i => ({ id: i.id, invitado_id: i.invitado_id, equipo_partido: null, isInvitado: true, jugador: { nombre: i.invitados?.nombre || 'Invitado', posicion_preferida: i.invitados?.posicion_preferida } })),
+  ];
 
   // Armar equipos al azar de los confirmados
   const handleShuffleEquipos = () => {
@@ -197,21 +202,35 @@ const DetallePartidoPage = () => {
     setNuevoEvento({ jugador_id: '', tipo: 'gol', minuto: 1 });
   };
 
-  const handleInviteJugadores = (e) => {
+  const handleInviteJugadores = async (e) => {
     e.preventDefault();
     if (selectedInvitados.length === 0) return;
 
     const isGuestId = (jugadorId) => invitados.some(inv => inv.id === jugadorId);
 
-    const nuevosJugadores = selectedInvitados.map((jugadorId) => ({
-      jugador_id: jugadorId,
-      equipo_partido: null,
-      estado_invitacion: isGuestId(jugadorId) ? 'confirmado' : 'pendiente',
-    }));
+    // Separar plantel vs invitados
+    const memberIds = selectedInvitados.filter(id => !isGuestId(id));
+    const guestIds = selectedInvitados.filter(id => isGuestId(id));
 
-    updatePartido(partido.id, {
-      jugadores: [...(partido.jugadores || []), ...nuevosJugadores]
-    });
+    // Agregar miembros del plantel al partido
+    if (memberIds.length > 0) {
+      const nuevosJugadores = memberIds.map((jugadorId) => ({
+        jugador_id: jugadorId,
+        equipo_partido: null,
+        estado_invitacion: 'pendiente',
+      }));
+      updatePartido(partido.id, {
+        jugadores: [...(partido.jugadores || []), ...nuevosJugadores]
+      });
+    }
+
+    // Agregar invitados a partido_invitados
+    for (const guestId of guestIds) {
+      const invitadoObj = invitados.find(i => i.id === guestId);
+      if (invitadoObj) {
+        await addInvitadoToPartido(partido.id, invitadoObj, null);
+      }
+    }
 
     setIsInviteModalOpen(false);
     setSelectedInvitados([]);
@@ -227,8 +246,11 @@ const DetallePartidoPage = () => {
     (j) => !(partido.jugadores || []).some((pj) => pj.jugador_id === j.id)
   );
   
-  const uninvitedPlantel = uninvitedJugadores.filter(j => plantel.some(p => p.id === j.id));
-  const uninvitedExtras = uninvitedJugadores.filter(j => invitados.some(inv => inv.id === j.id));
+  const uninvitedPlantel = uninvitedJugadores.filter(j => !invitados.some(inv => inv.id === j.id));
+  // Invitados que no están ya en partido_invitados
+  const uninvitedExtras = invitados.filter(
+    (inv) => !(partido.invitados_partido || []).some((pi) => pi.invitado_id === inv.id)
+  );
   
   const activeUninvitedList = inviteModalTab === 'plantel' ? uninvitedPlantel : uninvitedExtras;
 
@@ -811,6 +833,7 @@ const DetallePartidoPage = () => {
             Cambia a cada jugador de equipo o devuélvelo a la banca/sin asignar.
           </p>
           <div className="max-h-96 overflow-y-auto space-y-2 pr-1">
+            {/* Jugadores del plantel */}
             {partido.jugadores?.map((j) => {
               const jugador = getJugador(j.jugador_id);
               return (
@@ -859,6 +882,59 @@ const DetallePartidoPage = () => {
                       }
                       className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
                         !j.equipo_partido
+                          ? 'bg-gray-300 text-gray-800'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      Banca
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Invitados del partido */}
+            {(partido.invitados_partido || []).map((pi) => {
+              const nombre = pi.invitados?.nombre || 'Invitado';
+              return (
+                <div
+                  key={pi.id}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50/60 border border-purple-100"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar name={nombre} size="xs" />
+                    <div>
+                      <span className="text-xs font-semibold text-gray-900 truncate">{nombre}</span>
+                      <span className="text-[10px] text-purple-500 ml-1">Extra</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => updateInvitadoPartido(partido.id, pi.invitado_id, 'equipo_a')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                        pi.equipo_partido === 'equipo_a'
+                          ? 'bg-nablus-primary text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Equipo A
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateInvitadoPartido(partido.id, pi.invitado_id, 'equipo_b')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                        pi.equipo_partido === 'equipo_b'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Equipo B
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateInvitadoPartido(partido.id, pi.invitado_id, null)}
+                      className={`px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                        !pi.equipo_partido
                           ? 'bg-gray-300 text-gray-800'
                           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}

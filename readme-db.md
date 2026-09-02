@@ -113,7 +113,30 @@ users (1) ──────────< (N) partido_eventos   (N) >───�
 users (1) ──────────< (N) disponibilidad
 equipos (1) ────────< (N) partidos
 equipos (1) ────────< (N) users
+invitados (1) ──────< (N) partido_invitados (N) >────────── (1) partidos
 ```
+
+### 7. Tabla: `invitados` (Jugadores Extra sin cuenta)
+Registro de participantes que no tienen acceso al sistema pero pueden ser incluidos en partidos.
+
+| Columna | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | UUID | PK, DEFAULT `gen_random_uuid()` | Identificador del invitado |
+| `nombre` | TEXT | NOT NULL | Nombre completo |
+| `email` | TEXT | NULLABLE | Correo de contacto (solo referencial) |
+| `posicion_preferida` | TEXT | NOT NULL, DEFAULT `'mediocampo'` | Posición habitual |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` | Fecha de registro |
+
+### 8. Tabla: `partido_invitados` (Asignación de Extras a Partidos)
+Vincula invitados a partidos. Los invitados entran automáticamente como confirmados.
+
+| Columna | Tipo | Restricciones | Descripción |
+| :--- | :--- | :--- | :--- |
+| `id` | UUID | PK | Identificador |
+| `partido_id` | UUID | NOT NULL, FK → `partidos.id` (CASCADE) | Partido |
+| `invitado_id` | UUID | NOT NULL, FK → `invitados.id` (CASCADE) | Invitado |
+| `equipo_partido` | TEXT | CHECK `equipo_a` \| `equipo_b` | Equipo asignado |
+| `created_at` | TIMESTAMPTZ | NOT NULL, DEFAULT `now()` | Fecha |
 
 ---
 

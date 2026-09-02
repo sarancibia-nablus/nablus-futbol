@@ -164,6 +164,49 @@ export const PartidosProvider = ({ children }) => {
     });
   };
 
+  const addInvitadoToPartido = async (partidoId, invitado, equipoPartido = null) => {
+    const saved = await dbService.addInvitadoToPartido(partidoId, invitado.id, equipoPartido);
+    const newEntry = { ...saved, invitados: invitado };
+    setPartidos((prev) =>
+      prev.map((p) => {
+        if (p.id === partidoId) {
+          const existing = (p.invitados_partido || []).filter(i => i.invitado_id !== invitado.id);
+          return { ...p, invitados_partido: [...existing, newEntry] };
+        }
+        return p;
+      })
+    );
+    return saved;
+  };
+
+  const updateInvitadoPartido = async (partidoId, invitadoId, equipoPartido) => {
+    const saved = await dbService.updateInvitadoPartido(partidoId, invitadoId, equipoPartido);
+    setPartidos((prev) =>
+      prev.map((p) => {
+        if (p.id === partidoId) {
+          const updated = (p.invitados_partido || []).map((i) =>
+            i.invitado_id === invitadoId ? { ...i, equipo_partido: equipoPartido } : i
+          );
+          return { ...p, invitados_partido: updated };
+        }
+        return p;
+      })
+    );
+    return saved;
+  };
+
+  const removeInvitadoFromPartido = async (partidoId, invitadoId) => {
+    await dbService.removeInvitadoFromPartido(partidoId, invitadoId);
+    setPartidos((prev) =>
+      prev.map((p) => {
+        if (p.id === partidoId) {
+          return { ...p, invitados_partido: (p.invitados_partido || []).filter(i => i.invitado_id !== invitadoId) };
+        }
+        return p;
+      })
+    );
+  };
+
   return (
     <PartidosContext.Provider
       value={{
@@ -175,6 +218,9 @@ export const PartidosProvider = ({ children }) => {
         addEvento,
         removeEvento,
         updateJugadorInvitacion,
+        addInvitadoToPartido,
+        updateInvitadoPartido,
+        removeInvitadoFromPartido,
       }}
     >
       {children}
