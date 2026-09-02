@@ -7,7 +7,7 @@ import Badge from '../../components/ui/Badge';
 import { posiciones } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
-import { calculatePlayerStats } from '../../services/statsService';
+import { calculatePlayerStats, calculatePlayerOverall } from '../../services/statsService';
 
 const posicionBadge = {
   arquero: 'danger',
@@ -23,10 +23,15 @@ const JugadoresPage = () => {
 
   // Combine player profiles with dynamically computed real match stats
   const playersWithStats = useMemo(() => {
-    return jugadores.map((j) => ({
-      ...j,
-      stats: calculatePlayerStats(j.id, partidos),
-    }));
+    return jugadores.map((j) => {
+      const stats = calculatePlayerStats(j.id, partidos);
+      const media = calculatePlayerOverall(j, stats);
+      return {
+        ...j,
+        stats,
+        media,
+      };
+    });
   }, [jugadores, partidos]);
 
   const baseColumns = [
@@ -58,6 +63,19 @@ const JugadoresPage = () => {
           </Badge>
         );
       },
+    },
+    {
+      key: 'media',
+      header: 'OVR',
+      accessor: (row) => row.media?.ovr || 50,
+      sortable: true,
+      render: (row) => (
+        <div className="flex items-center justify-center">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-900 to-purple-900 text-white font-black text-sm shadow-sm border border-purple-400/30">
+            {row.media?.ovr || 50}
+          </span>
+        </div>
+      ),
     },
     {
       key: 'partidos',
