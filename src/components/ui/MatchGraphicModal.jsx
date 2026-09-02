@@ -20,6 +20,17 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
   const formatHora = (f) =>
     new Date(f).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
+  const formatPlayerName = (name) => {
+    if (!name) return 'Jugador';
+    if (name.length <= 14) return name;
+    
+    const parts = name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      return `${parts[0]} ${parts[1][0]}.`;
+    }
+    return name;
+  };
+
   const handleDownload = async () => {
     if (!graphicRef.current) return;
     try {
@@ -82,9 +93,10 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
         <div className="p-6 overflow-y-auto overflow-x-auto flex-1 flex flex-col items-center bg-gray-50">
           
           {/* El contenedor que será capturado. Forzamos dimensiones estrictas para evitar que Flexbox lo corte */}
+          {/* Proporción 4:5 (ej. 480x600) */}
           <div 
             ref={graphicRef}
-            className="w-[360px] min-w-[360px] h-[640px] min-h-[640px] shrink-0 relative overflow-hidden rounded-xl shadow-2xl bg-[#0B0F19] flex flex-col"
+            className="w-[480px] min-w-[480px] h-[600px] min-h-[600px] shrink-0 relative overflow-hidden rounded-xl shadow-2xl bg-[#0B0F19] flex flex-col"
           >
             {/* Fondo complejo: Degradados oscuros y luz corporativa */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-[#0B0F19] to-purple-950/80" />
@@ -149,8 +161,8 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
                     <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-3 drop-shadow-md">Equipo A</h3>
                     <div className="w-full flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 shadow-inner">
                       {equipoA.length > 0 ? equipoA.map((j) => (
-                        <div key={j.id} className="w-full text-[11px] font-bold tracking-wide text-gray-200 uppercase bg-white/5 py-1 px-2 rounded-md truncate border border-white/5 text-center shadow-sm">
-                          {j.jugador?.nombre || 'Jugador'}
+                        <div key={j.id} className="w-full text-[12px] font-bold tracking-wide text-gray-200 uppercase bg-white/5 py-1.5 px-2 rounded-md truncate border border-white/5 text-center shadow-sm">
+                          {formatPlayerName(j.jugador?.nombre)}
                         </div>
                       )) : (
                         <div className="text-[10px] text-gray-500 italic mt-4 text-center">Sin confirmar</div>
@@ -163,8 +175,8 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
                     <h3 className="text-xl font-black italic uppercase tracking-wider text-purple-400 mb-3 drop-shadow-md">Equipo B</h3>
                     <div className="w-full flex-1 bg-purple-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-3 flex flex-col gap-1.5 shadow-inner">
                       {equipoB.length > 0 ? equipoB.map((j) => (
-                        <div key={j.id} className="w-full text-[11px] font-bold tracking-wide text-purple-100 uppercase bg-purple-500/10 py-1 px-2 rounded-md truncate border border-purple-500/20 text-center shadow-sm">
-                          {j.jugador?.nombre || 'Jugador'}
+                        <div key={j.id} className="w-full text-[12px] font-bold tracking-wide text-purple-100 uppercase bg-purple-500/10 py-1.5 px-2 rounded-md truncate border border-purple-500/20 text-center shadow-sm">
+                          {formatPlayerName(j.jugador?.nombre)}
                         </div>
                       )) : (
                         <div className="text-[10px] text-gray-500 italic mt-4 text-center">Sin confirmar</div>
