@@ -25,7 +25,7 @@ const JugadoresPage = () => {
   const playersWithStats = useMemo(() => {
     return jugadores.map((j) => {
       const stats = calculatePlayerStats(j.id, partidos);
-      const media = calculatePlayerOverall(j, stats);
+      const media = calculatePlayerOverall(stats, j.posicion_preferida);
       return {
         ...j,
         stats,
