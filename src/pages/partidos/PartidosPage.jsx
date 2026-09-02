@@ -90,9 +90,11 @@ const PartidosPage = () => {
           </Card>
         ) : (
           filtrados.map((partido) => {
-            const confirmados =
+            const confirmadosPlantel =
               partido.jugadores?.filter((j) => j.estado_invitacion === 'confirmado').length || 0;
-            const totalInvitados = partido.jugadores?.length || 0;
+            const totalInvitadosPartido = partido.invitados_partido?.length || 0;
+            const confirmados = confirmadosPlantel + totalInvitadosPartido;
+            const totalInvitados = (partido.jugadores?.length || 0) + totalInvitadosPartido;
 
             return (
               <Card
