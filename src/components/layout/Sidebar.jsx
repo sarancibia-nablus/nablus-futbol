@@ -32,7 +32,7 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, equipo } = useAuth();
 
   const isActive = (path) => {
     return location.pathname.startsWith(path);
@@ -45,8 +45,21 @@ const Sidebar = () => {
                   ${collapsed ? 'w-[72px]' : 'w-[240px]'}`}
     >
       {/* Logo */}
-      <div className={`flex items-center gap-3 px-5 h-16 border-b border-gray-100 shrink-0 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <NablusLogo className="h-8 w-auto flex-shrink-0" variant="primary" showText={!collapsed} />
+      <div className={`flex items-center gap-3 px-5 h-16 border-b border-gray-100 shrink-0 overflow-hidden ${collapsed ? 'justify-center px-2' : ''}`}>
+        {equipo?.logo_url ? (
+          <img src={equipo.logo_url} alt={equipo?.nombre || 'Equipo'} className="w-8 h-8 rounded-lg object-cover flex-shrink-0 shadow-sm border border-gray-200/50" />
+        ) : (
+          <div className="w-8 h-8 rounded-lg bg-nablus-primary/10 flex items-center justify-center flex-shrink-0 shadow-sm border border-nablus-primary/20">
+            <Shield className="w-4.5 h-4.5 text-nablus-primary" />
+          </div>
+        )}
+        {!collapsed && (
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-gray-900 truncate text-sm leading-tight">
+              {equipo?.nombre || 'Fútbol Nablus'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
