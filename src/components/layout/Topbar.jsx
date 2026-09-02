@@ -54,65 +54,18 @@ const Topbar = () => {
           <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600" />
         </button>
 
-        {/* Dropdown for role switcher & profile */}
+        {/* Dropdown for profile */}
         {menuOpen && (
-          <div className="absolute right-0 top-14 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 py-2 z-50 animate-scale-in">
-            <div className="px-3 py-2 border-b border-gray-100">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                Miembros del Plantel
-              </p>
-            </div>
-
-            <div className="max-h-60 overflow-y-auto py-1">
-              {jugadores.map((j) => (
-                <button
-                  key={j.id}
-                  onClick={() => {
-                    switchUser(j.id);
-                    setMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs transition-colors ${
-                    j.id === user?.id
-                      ? 'bg-nablus-primary/10 text-nablus-primary-dark font-bold'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Avatar name={j.nombre} src={j.avatar_url} size="xs" />
-                    <div>
-                      <div className="font-semibold">{j.nombre}</div>
-                      <div className="text-[10px] text-gray-400 capitalize">
-                        {j.posicion_preferida} {j.es_admin ? '• Capitán' : '• Jugador'}
-                      </div>
-                    </div>
-                  </div>
-                  {j.id === user?.id && <Check className="w-3.5 h-3.5 text-nablus-primary" />}
-                </button>
-              ))}
-            </div>
-
-            <div className="border-t border-gray-100 pt-1 mt-1 px-2 space-y-1">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate('/perfil');
-                }}
-                className="w-full text-center py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Ir a Mi Perfil
-              </button>
-              {jugadores.length === 0 && (
-                <button
-                  onClick={async () => {
-                    await seedDatabase();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full text-center py-1.5 text-xs font-bold text-nablus-primary-dark bg-nablus-primary/10 hover:bg-nablus-primary/20 rounded-lg transition-colors"
-                >
-                  Poblar datos iniciales
-                </button>
-              )}
-            </div>
+          <div className="absolute right-0 top-14 w-48 bg-white rounded-2xl shadow-xl border border-gray-200 py-1 z-50 animate-scale-in">
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                navigate('/perfil');
+              }}
+              className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Ver Mi Perfil
+            </button>
           </div>
         )}
       </div>
