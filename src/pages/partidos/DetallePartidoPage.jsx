@@ -20,12 +20,14 @@ import {
   AlertTriangle,
   Download,
   UserPlus,
+  Image as ImageIcon,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import MatchGraphicModal from '../../components/ui/MatchGraphicModal';
 import { Input, Select } from '../../components/ui/Input';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
@@ -54,7 +56,7 @@ const eventoEmoji = {
 const DetallePartidoPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAdmin, jugadores: allJugadores } = useAuth();
+  const { user, isAdmin, jugadores: allJugadores, equipo } = useAuth();
   const {
     getPartidoById,
     updatePartido,
@@ -71,6 +73,7 @@ const DetallePartidoPage = () => {
   const [isEquiposModalOpen, setIsEquiposModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [showGraphicModal, setShowGraphicModal] = useState(false);
   const [selectedInvitados, setSelectedInvitados] = useState([]);
 
   // Form State para edición de partido
@@ -401,26 +404,36 @@ const DetallePartidoPage = () => {
             <Users className="w-4 h-4 text-nablus-primary" />
             Alineaciones y Formación de Equipos
           </h2>
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Shuffle}
-                onClick={handleShuffleEquipos}
-                title="Distribuye a los confirmados al azar"
-              >
-                Sortear equipos al azar
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsEquiposModalOpen(true)}
-              >
-                Asignar manualmente
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={ImageIcon}
+              onClick={() => setShowGraphicModal(true)}
+            >
+              Generar Gráfica
+            </Button>
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Shuffle}
+                  onClick={handleShuffleEquipos}
+                  title="Distribuye a los confirmados al azar"
+                >
+                  Sortear equipos al azar
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsEquiposModalOpen(true)}
+                >
+                  Asignar manualmente
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -903,6 +916,15 @@ const DetallePartidoPage = () => {
           </Card>
         </div>
       )}
+      {/* Modal de Gráfica */}
+      <MatchGraphicModal
+        isOpen={showGraphicModal}
+        onClose={() => setShowGraphicModal(false)}
+        partido={partido}
+        equipoA={equipoA}
+        equipoB={equipoB}
+        equipo={equipo}
+      />
     </div>
   );
 };
