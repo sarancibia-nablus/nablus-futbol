@@ -158,9 +158,9 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
               {/* Verses Layout */}
               <div className="flex-1 flex flex-col relative w-full px-2 mt-2">
                 
-                {/* VS Badge Floating — posición fija en px para coherencia preview/descarga */}
-                <div className="absolute left-1/2 z-20" style={{ top: '50%', transform: 'translate(-50%, -50%)' }}>
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.5)] border-4 border-[#0B0F19]">
+                {/* VS Badge Floating — evitamos transform: translate para que html-to-image no corra la sombra */}
+                <div className="absolute left-0 right-0 top-1/2 -mt-6 z-20 flex justify-center pointer-events-none">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.8)] border-4 border-[#0B0F19] pointer-events-auto">
                     <span className="text-base font-black italic text-white leading-none">VS</span>
                   </div>
                 </div>
