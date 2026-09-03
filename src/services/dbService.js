@@ -239,7 +239,7 @@ export const dbService = {
   async updatePartido(id, updates) {
     if (isSupabaseConfigured) {
       try {
-        const { jugadores, eventos, equipo_id, fecha, ubicacion, ubicacion_url, ...partidoFields } = updates;
+        const { jugadores, invitados_partido, eventos, equipo_id, fecha, ubicacion, ubicacion_url, ...partidoFields } = updates;
         
         // Transformar solo los campos que vengan en updates
         const dbPayload = { ...partidoFields };
@@ -267,6 +267,19 @@ export const dbService = {
               .upsert(payload, { onConflict: 'partido_id,jugador_id' });
           }
         }
+        if (invitados_partido) {
+          for (const i of invitados_partido) {
+            const payload = {
+              id: i.id,
+              partido_id: id,
+              invitado_id: i.invitado_id,
+            };
+            if (i.equipo_partido !== undefined) payload.equipo_partido = i.equipo_partido;
+            await supabase
+              .from('partido_invitados')
+              .upsert(payload, { onConflict: 'id' });
+          }
+        }
       } catch (err) {
         console.warn('Error updating partido in Supabase:', err);
       }
@@ -285,6 +298,12 @@ export const dbService = {
           // Add any new players that weren't in the existing array
           const newPlayers = updates.jugadores.filter(u => !p.jugadores.some(e => e.jugador_id === u.jugador_id));
           pUpdated.jugadores = [...pUpdated.jugadores, ...newPlayers];
+        }
+        if (updates.invitados_partido && p.invitados_partido) {
+          pUpdated.invitados_partido = p.invitados_partido.map(existing => {
+            const match = updates.invitados_partido.find(u => u.id === existing.id);
+            return match ? { ...existing, ...match } : existing;
+          });
         }
         return pUpdated;
       }

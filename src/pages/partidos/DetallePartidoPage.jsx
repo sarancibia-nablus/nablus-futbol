@@ -139,15 +139,20 @@ const DetallePartidoPage = () => {
     ...(partido.invitados_partido || []).filter(i => !i.equipo_partido).map(i => ({ id: i.id, invitado_id: i.invitado_id, equipo_partido: null, isInvitado: true, jugador: { nombre: i.invitados?.nombre || 'Invitado', posicion_preferida: i.invitados?.posicion_preferida } })),
   ];
 
-  // Armar equipos al azar de los confirmados
+  // Armar equipos al azar de los confirmados e invitados
   const handleShuffleEquipos = () => {
-    const confirmados = (partido.jugadores || []).filter(
+    const confirmadosJugadores = (partido.jugadores || []).filter(
       (j) => j.estado_invitacion === 'confirmado'
+    ).map(j => ({ ...j, isInvitado: false, uid: j.jugador_id }));
+
+    const confirmadosInvitados = (partido.invitados_partido || []).map(
+      (i) => ({ ...i, isInvitado: true, uid: i.id })
     );
-    const shuffled = [...confirmados].sort(() => 0.5 - Math.random());
+
+    const shuffled = [...confirmadosJugadores, ...confirmadosInvitados].sort(() => 0.5 - Math.random());
 
     const updatedJugadores = (partido.jugadores || []).map((j) => {
-      const index = shuffled.findIndex((s) => s.jugador_id === j.jugador_id);
+      const index = shuffled.findIndex((s) => !s.isInvitado && s.uid === j.jugador_id);
       if (index !== -1) {
         return {
           ...j,
@@ -157,7 +162,21 @@ const DetallePartidoPage = () => {
       return { ...j, equipo_partido: null };
     });
 
-    updatePartido(partido.id, { jugadores: updatedJugadores });
+    const updatedInvitados = (partido.invitados_partido || []).map((i) => {
+      const index = shuffled.findIndex((s) => s.isInvitado && s.uid === i.id);
+      if (index !== -1) {
+        return {
+          ...i,
+          equipo_partido: index % 2 === 0 ? 'equipo_a' : 'equipo_b',
+        };
+      }
+      return { ...i, equipo_partido: null };
+    });
+
+    updatePartido(partido.id, { 
+      jugadores: updatedJugadores,
+      invitados_partido: updatedInvitados
+    });
   };
 
   const handleSaveEditPartido = (e) => {
