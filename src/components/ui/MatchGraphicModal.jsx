@@ -158,10 +158,15 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
               {/* Verses Layout */}
               <div className="flex-1 flex flex-col relative w-full px-2 mt-2">
                 
-                {/* VS Badge Floating — evitamos transform: translate para que html-to-image no corra la sombra */}
+                {/* VS Badge Floating */}
                 <div className="absolute left-0 right-0 top-1/2 -mt-6 z-20 flex justify-center pointer-events-none">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.8)] border-4 border-[#0B0F19] pointer-events-auto">
-                    <span className="text-base font-black italic text-white leading-none">VS</span>
+                  <div className="relative w-12 h-12 flex items-center justify-center pointer-events-auto">
+                    {/* Glow usando blur y absolute, más confiable en html-to-image que box-shadow */}
+                    <div className="absolute inset-0 bg-purple-500 rounded-full blur-[8px] opacity-80" />
+                    {/* Badge */}
+                    <div className="relative z-10 w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center border-4 border-[#0B0F19]">
+                      <span className="text-base font-black italic text-white leading-none">VS</span>
+                    </div>
                   </div>
                 </div>
 
