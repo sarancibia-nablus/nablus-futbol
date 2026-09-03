@@ -350,7 +350,10 @@ const DetallePartidoPage = () => {
 
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <a
-                href={generateGoogleCalendarUrl(partido, (partido.jugadores || []).map(j => getJugador(j.jugador_id)?.email).filter(Boolean))}
+                href={generateGoogleCalendarUrl(partido, [
+                  ...(partido.jugadores || []).map(j => getJugador(j.jugador_id)?.email),
+                  ...(partido.invitados_partido || []).map(pi => pi.invitados?.email)
+                ].filter(Boolean))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors border border-gray-200"
