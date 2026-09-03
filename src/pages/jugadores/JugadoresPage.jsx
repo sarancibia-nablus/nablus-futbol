@@ -44,13 +44,13 @@ const JugadoresPage = () => {
   // Average OVR of the official squad — used as baseline for invitados
   const avgPlantelOVR = useMemo(() => {
     if (plantelWithStats.length === 0) return 70;
-    const total = plantelWithStats.reduce((sum, j) => sum + (j.media || 70), 0);
+    const total = plantelWithStats.reduce((sum, j) => sum + (j.media?.ovr || 70), 0);
     return Math.round(total / plantelWithStats.length);
   }, [plantelWithStats]);
 
   const playersWithStats = useMemo(() => {
     if (activeTab === 'invitados') {
-      return invitados.map((inv) => ({ ...inv, media: avgPlantelOVR }));
+      return invitados.map((inv) => ({ ...inv, media: { ovr: avgPlantelOVR } }));
     }
     return plantelWithStats;
   }, [activeTab, plantelWithStats, invitados, avgPlantelOVR]);
@@ -184,11 +184,11 @@ const JugadoresPage = () => {
         {
           key: 'ovr',
           header: 'OVR',
-          accessor: 'media',
+          accessor: (row) => row.media?.ovr || avgPlantelOVR,
           sortable: true,
           render: (row) => (
             <div className="flex items-center gap-1.5">
-              <span className="font-mono font-bold text-sm text-nablus-primary">{row.media ?? avgPlantelOVR}</span>
+              <span className="font-mono font-bold text-sm text-nablus-primary">{row.media?.ovr || avgPlantelOVR}</span>
               <span className="text-[10px] text-gray-400">avg</span>
             </div>
           ),
