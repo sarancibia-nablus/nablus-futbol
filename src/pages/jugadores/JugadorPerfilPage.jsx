@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
 import { calculatePlayerStats } from '../../services/statsService';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { decodeId } from '../../utils/hash';
 
 const posicionBadge = {
   arquero: 'danger',
@@ -19,12 +20,14 @@ const posicionBadge = {
 };
 
 const JugadorPerfilPage = () => {
-  const { id } = useParams();
+  const { id: encodedId } = useParams();
   const navigate = useNavigate();
   const { jugadores } = useAuth();
   const { partidos } = usePartidos();
 
-  const jugador = jugadores.find((j) => j.id === id);
+  const id = decodeId(encodedId);
+  // Fallback a encodedId por si es el UUID original (retrocompatibilidad o links viejos)
+  const jugador = jugadores.find((j) => j.id === id) || jugadores.find((j) => j.id === encodedId);
 
   // Compute live stats directly from real database matches and events
   const playerStats = useMemo(() => {

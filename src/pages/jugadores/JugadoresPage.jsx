@@ -11,6 +11,7 @@ import { posiciones } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { usePartidos } from '../../context/PartidosContext';
 import { calculatePlayerStats, calculatePlayerOverall } from '../../services/statsService';
+import { encodeId } from '../../utils/hash';
 
 const posicionBadge = {
   arquero: 'danger',
@@ -310,7 +311,7 @@ const JugadoresPage = () => {
           columns={columns}
           data={playersWithStats}
           searchPlaceholder="Buscar por nombre o correo..."
-          onRowClick={(row) => activeTab === 'plantel' ? navigate(`/jugadores/${row.id}`) : null}
+          onRowClick={(row) => activeTab === 'plantel' ? navigate(`/jugadores/${encodeId(row.id)}`) : null}
           toolbar={
             activeTab === 'invitados' && isAdmin ? (
               <Button onClick={() => setIsGuestModalOpen(true)} icon={UserPlus}>
