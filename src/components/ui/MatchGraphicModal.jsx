@@ -136,21 +136,21 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
                   </div>
                 )}
                 
-                <h1 className="text-[3.2rem] font-black italic uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300 drop-shadow-sm leading-none px-2 overflow-visible">
+                <h1 className="text-[3.2rem] font-black italic uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-300 drop-shadow-sm leading-none px-2 overflow-visible whitespace-nowrap">
                   Match Day
                 </h1>
                 
-                <div className="flex items-center gap-2 mt-3 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
-                  <span className="text-[10px] font-bold tracking-widest text-purple-200 uppercase">
+                <div className="flex items-center gap-2 mt-3 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 whitespace-nowrap">
+                  <span className="text-[10px] font-bold tracking-widest text-purple-200 uppercase whitespace-nowrap">
                     {formatFecha(partido.fecha)}
                   </span>
-                  <div className="w-1 h-1 rounded-full bg-purple-400"></div>
-                  <span className="text-[10px] font-bold tracking-widest text-purple-200 uppercase">
+                  <div className="w-1 h-1 rounded-full bg-purple-400 shrink-0"></div>
+                  <span className="text-[10px] font-bold tracking-widest text-purple-200 uppercase whitespace-nowrap">
                     {formatHora(partido.fecha)}
                   </span>
                 </div>
-                <div className="mt-2 text-xs font-semibold text-gray-400 tracking-wider flex items-center justify-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
+                <div className="mt-2 text-xs font-semibold text-gray-400 tracking-wider flex items-center justify-center gap-1.5 whitespace-nowrap">
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
                   {partido.lugar}
                 </div>
               </div>
@@ -168,21 +168,21 @@ const MatchGraphicModal = ({ isOpen, onClose, partido, equipoA, equipoB, equipo 
                 <div className="flex w-full gap-3 h-full min-w-0">
                   {/* Equipo A */}
                   <div className="flex-1 flex flex-col items-center min-w-0">
-                    <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-3 drop-shadow-md">Equipo A</h3>
+                    <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-3 drop-shadow-md whitespace-nowrap">Equipo A</h3>
                     <div className="w-full flex-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 shadow-inner">
                       {equipoA.length > 0 ? equipoA.map((j) => (
                         <div key={j.id} className="w-full text-[12px] font-bold tracking-wide text-gray-200 uppercase bg-white/5 py-1.5 px-2 rounded-md truncate border border-white/5 text-center shadow-sm">
                           {formatPlayerName(j.jugador?.nombre)}
                         </div>
                       )) : (
-                        <div className="text-[10px] text-gray-500 italic mt-4 text-center">Sin confirmar</div>
+                        <div className="text-[10px] text-gray-500 italic mt-4 text-center whitespace-nowrap">Sin confirmar</div>
                       )}
                     </div>
                   </div>
 
                   {/* Equipo B */}
                   <div className="flex-1 flex flex-col items-center min-w-0">
-                    <h3 className="text-xl font-black italic uppercase tracking-wider text-purple-400 mb-3 drop-shadow-md">Equipo B</h3>
+                    <h3 className="text-xl font-black italic uppercase tracking-wider text-purple-400 mb-3 drop-shadow-md whitespace-nowrap">Equipo B</h3>
                     <div className="w-full flex-1 bg-purple-900/20 backdrop-blur-sm border border-purple-500/20 rounded-xl p-3 flex flex-col gap-1.5 shadow-inner">
                       {equipoB.length > 0 ? equipoB.map((j) => (
                         <div key={j.id} className="w-full text-[12px] font-bold tracking-wide text-purple-100 uppercase bg-purple-500/10 py-1.5 px-2 rounded-md truncate border border-purple-500/20 text-center shadow-sm">
